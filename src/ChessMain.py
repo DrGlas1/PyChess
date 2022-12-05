@@ -33,10 +33,16 @@ def main():
     running = True
     sq_selected = ()                                   # Tuple with the square that the player last selected
     player_clicks = []                                 # Array of the last two selected squares
+    valid_moves = gs.valid_moves()
+    move_made = False
     while running:
         for e in p.event.get():
             if e.type == p.QUIT:
                 running = False
+            elif e.type == p.KEYDOWN:
+                if e.key == p.K_z:
+                    gs.undo()
+                    move_made = True
             elif e.type == p.MOUSEBUTTONDOWN:
                 location = p.mouse.get_pos()           # (x, y) location of the mouse
                 c = location[0] // SQUARE_SIZE
@@ -47,14 +53,16 @@ def main():
                 else:
                     sq_selected = (r, c)
                     player_clicks.append(sq_selected)
-                    print(sq_selected)
-                    print(player_clicks)
                 if len(player_clicks) == 2:
                     move = ChessEngine.Move(player_clicks[0], player_clicks[1], gs.board)
-                    print(move.get_chess_notation())
-                    gs.make_move(move)
+                    if move in valid_moves:
+                        gs.make_move(move)
+                        move_made = True
                     sq_selected = ()
                     player_clicks = []
+        if move_made:
+            valid_moves = gs.valid_moves()
+            move_made = False
         clock.tick(MAX_FPS)
         p.display.flip()
         draw_game_state(screen, gs)
