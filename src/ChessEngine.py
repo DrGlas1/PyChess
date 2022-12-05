@@ -1,5 +1,6 @@
 from typing import List
 from typing import Dict
+from typing import Any
 
 
 class Move:
@@ -43,13 +44,13 @@ class Move:
         self.piece_captured = board[self.end_row][self.end_col]
         self.hash_code = self.start_row * 1000 + self.start_col * 100 + self.end_row * 10 + self.end_col
 
-    def __eq__(self, other: "Move") -> bool:
+    def __eq__(self, other: Any) -> bool:
         """
-        Takes in another Move. Checks if other Move has equal hash code.
+        Takes in another object. Checks if other is another Move and if that move represents the same move.
 
-        :param other: Another Move
-        :type other: Move
-        :return: Checks if self and other have same hash code
+        :param other: Another object
+        :type other: Any
+        :return: Checks if self and other have the same hash code
         :rtype: bool
         """
         if isinstance(other, Move):
@@ -88,7 +89,7 @@ class GameState:
     :type self.board: List[List[str]]
     :param self.white_to_move: Represents whose turn it is
     :type self.white_to_move: bool
-    :param self.move_log: A list of all the made moves to enable undos and game exports
+    :param self.move_log: A list of all the made moves to enable undoes and game exports
     :type self.move_log: List[str]
     """
 
@@ -138,12 +139,12 @@ class GameState:
         """
         return self.possible_moves()
 
-    def possible_moves(self) -> List[str]:
+    def possible_moves(self) -> List[Move]:
         """
         All possible moves without regard for checks.
 
         :return: All possible moves without regard for checks
-        :rtype: List[str]
+        :rtype: List[Move]
         """
         moves = []
         for r in range(len(self.board)):
@@ -166,16 +167,16 @@ class GameState:
                         self.generate_queen_moves(r, c, moves)
         return moves
 
-    def generate_pawn_moves(self, r: str, c: str, moves: List[str]):
+    def generate_pawn_moves(self, r: int, c: int, moves: List[Move]):
         """
         Appends all possible legal moves made by the pawn at the current position to moves
 
         :param r: The current column of the pawn
-        :type r: str
+        :type r: int
         :param c: The current row of the pawn
-        :type c: str
+        :type c: int
         :param moves: All current valid moves
-        :type moves: List[str]
+        :type moves: List[Move]
         """
         prefix = "b" if self.white_to_move else "w"
         change = -1 if self.white_to_move else +1
@@ -190,16 +191,16 @@ class GameState:
             if self.board[r + change][c + 1][0] == prefix:
                 moves.append(Move((r, c), (r + change, c + 1), self.board))
 
-    def generate_knight_moves(self, r: str, c: str, moves: List[str]):
+    def generate_knight_moves(self, r: int, c: int, moves: List[Move]):
         """
         Appends all possible legal moves made by the knight at the current position to moves
 
         :param r: The current column of the knight
-        :type r: str
+        :type r: int
         :param c: The current row of the knight
-        :type c: str
+        :type c: int
         :param moves: All current valid moves
-        :type moves: List[str]
+        :type moves: List[Move]
         """
         same_color = "w" if self.white_to_move else "b"
         deltas = [(-2, -1), (-2, +1), (+2, -1), (+2, +1), (-1, -2), (-1, +2), (+1, -2), (+1, +2)]
@@ -212,16 +213,16 @@ class GameState:
         for next_move in results:
             moves.append(Move((r, c), next_move, self.board))
 
-    def generate_bishop_moves(self, r: str, c: str, moves: List[str]):
+    def generate_bishop_moves(self, r: int, c: int, moves: List[Move]):
         """
         Appends all possible legal moves made by the bishop at the current position to moves
 
         :param r: The current column of the bishop
-        :type r: str
+        :type r: int
         :param c: The current row of the bishop
-        :type c: str
+        :type c: int
         :param moves: All current valid moves
-        :type moves: List[str]
+        :type moves: List[Move]
         """
         same_color = "w" if self.white_to_move else "b"
         other_color = "b" if self.white_to_move else "w"
@@ -238,16 +239,16 @@ class GameState:
                 moves.append(Move((r, c), next_move, self.board))
                 next_move = (next_move[0] + delta[0], next_move[1] + delta[1])
 
-    def generate_king_moves(self, r: str, c: str, moves: List[str]):
+    def generate_king_moves(self, r: int, c: int, moves: List[Move]):
         """
         Appends all possible legal moves made by the king at the current position to moves
 
         :param r: The current column of the king
-        :type r: str
+        :type r: int
         :param c: The current row of the king
-        :type c: str
+        :type c: int
         :param moves: All current valid moves
-        :type moves: List[str]
+        :type moves: List[Move]
         """
         same_color = "w" if self.white_to_move else "b"
         deltas = [(+1, +1), (+1, -1), (-1, +1), (-1, -1), (+1, 0), (0, +1), (-1, 0), (0, -1)]
@@ -260,16 +261,16 @@ class GameState:
         for next_move in results:
             moves.append(Move((r, c), next_move, self.board))
 
-    def generate_queen_moves(self, r: str, c: str, moves: List[str]):
+    def generate_queen_moves(self, r: int, c: int, moves: List[Move]):
         """
         Appends all possible legal moves made by the queen at the current position to moves
 
         :param r: The current column of the queen
-        :type r: str
+        :type r: int
         :param c: The current row of the queen
-        :type c: str
+        :type c: int
         :param moves: All current valid moves
-        :type moves: List[str]
+        :type moves: List[Move]
         """
         same_color = "w" if self.white_to_move else "b"
         other_color = "b" if self.white_to_move else "w"
@@ -286,16 +287,16 @@ class GameState:
                 moves.append(Move((r, c), next_move, self.board))
                 next_move = (next_move[0] + delta[0], next_move[1] + delta[1])
 
-    def generate_rook_moves(self, r: str, c: str, moves: List[str]):
+    def generate_rook_moves(self, r: int, c: int, moves: List[Move]):
         """
         Appends all possible legal moves made by the rook at the current position to moves
 
         :param r: The current column of the rook
-        :type r: str
+        :type r: int
         :param c: The current row of the rook
-        :type c: str
+        :type c: int
         :param moves: All current valid moves
-        :type moves: List[str]
+        :type moves: List[Move]
         """
         same_color = "w" if self.white_to_move else "b"
         other_color = "b" if self.white_to_move else "w"
@@ -311,5 +312,3 @@ class GameState:
                 captures = self.board[next_move[0]][next_move[1]][0] == other_color
                 moves.append(Move((r, c), next_move, self.board))
                 next_move = (next_move[0] + delta[0], next_move[1] + delta[1])
-
-
