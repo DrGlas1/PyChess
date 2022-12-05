@@ -1,14 +1,98 @@
+from typing import List
+from typing import Dict
+
+
+class Move:
+    """
+    Class representing a move.
+
+    :param self.ranks_to_rows: Converts programming notation to chess notation for rows
+    :type self.ranks_to_rows: Dict[str, int]
+    :param self.rows_to_ranks: Converts chess notation to programming notation for rows
+    :type self.rows_to_ranks: Dict[int, str]
+    :param self.files_to_cols: Converts programming notation to chess notation for cols
+    :type self.files_to_cols: Dict[str, int]
+    :param self.cols_to_files: Converts chess notation to programming notation for cols
+    :type self.cols_to_files: Dict[int, str]
+    :param self.start_row: String representing the starting row of the move
+    :type self.start_row: str
+    :param self.start_col: String representing the starting column of the move
+    :type self.start_col: str
+    :param self.end_row: String representing the ending row of the move
+    :type self.end_row: str
+    :param self.end_col: String representing the ending column of the move
+    :type self.end_col: str
+    :param self.piece_moved: String representing the piece moved
+    :type self.piece_moved: str
+    :param self.piece_captured: String representing the piece that the move overrides
+    :type self.piece_captured: str
+    :param self.hash_code: Int representing an id for determining if two moves are equivalent
+    :type self.hash_code: int
+    """
+    ranks_to_rows = {"1": 7, "2": 6, "3": 5, "4": 4, "5": 3, "6": 2, "7": 1, "8": 0}
+    rows_to_ranks = {v: k for k, v in ranks_to_rows.items()}
+    files_to_cols = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "g": 6, "h": 7}
+    cols_to_files = {v: k for k, v in files_to_cols.items()}
+
+    def __init__(self, start_sq, end_sq, board):
+        self.start_row = start_sq[0]
+        self.start_col = start_sq[1]
+        self.end_row = end_sq[0]
+        self.end_col = end_sq[1]
+        self.piece_moved = board[self.start_row][self.start_col]
+        self.piece_captured = board[self.end_row][self.end_col]
+        self.hash_code = self.start_row * 1000 + self.start_col * 100 + self.end_row * 10 + self.end_col
+
+    def __eq__(self, other: "Move") -> bool:
+        """
+        Takes in another Move. Checks if other Move has equal hash code.
+
+        :param other: Another Move
+        :type other: Move
+        :return: Checks if self and other have same hash code
+        :rtype: bool
+        """
+        if isinstance(other, Move):
+            return self.hash_code == other.hash_code
+        return False
+
+    def get_chess_notation(self) -> str:
+        """
+        Presents the move in a readable way
+
+        :return: A string that represents the move made
+        :rtype: str
+        """
+        return self.get_rank_file(self.start_row, self.start_col) + self.get_rank_file(self.end_row, self.end_col)
+
+    def get_rank_file(self, r: str, c: str) -> str:
+        """
+        Takes in a position and returns that position according to chess convention on rows and columns.
+
+        :param r: String representing a row on the board
+        :type r: str
+        :param c: String representing a column in the board
+        :type c: str
+        :return: Returns a string representing the position according to chess convention on rows and columns
+        :rtype: str
+        """
+        return self.cols_to_files[c] + self.rows_to_ranks[r]
+
+
 class GameState:
     """
     This class is responsible for storing all the information about the current state of the chess game.
-    Also responsible for determining the valid moves at the current state, and keep a move-log.
+    Also, responsible for determining the valid moves at the current state, and keep a move-log.
+
+    :param self.board: Represents the position of all the pieces
+    :type self.board: List[List[str]]
+    :param self.white_to_move: Represents whose turn it is
+    :type self.white_to_move: bool
+    :param self.move_log: A list of all the made moves to enable undos and game exports
+    :type self.move_log: List[str]
     """
 
     def __init__(self):
-        """Describes the chessboard as a 8x8 grid where each element represents a position
-        Prefix of w represents a white piece, a b represents a black piece and a -- an empty position
-        Piece notation is using standard chess notation
-        """
         self.board = [
             ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
             ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
@@ -22,15 +106,23 @@ class GameState:
         self.white_to_move = True
         self.move_log = []
 
-    def make_move(self, move):
-        """"""
+    def make_move(self, move: Move):
+        """
+        Takes in a move made.
+        Changes the GameState to reflect that move and adds it to the move log.
+
+        :param move: Represents the move made
+        :type move: Move
+        """
         self.board[move.start_row][move.start_col] = "--"
         self.board[move.end_row][move.end_col] = move.piece_moved
         self.move_log.append(move)
         self.white_to_move = not self.white_to_move
 
     def undo(self):
-        """"""
+        """
+        Reverses the latest move in the move log.
+        """
         if len(self.move_log) != 0:
             move = self.move_log.pop()
             self.board[move.start_row][move.start_col] = move.piece_moved
@@ -38,11 +130,21 @@ class GameState:
             self.white_to_move = not self.white_to_move
 
     def valid_moves(self):
-        """"""
+        """
+        Filters possible moves by removing checks.
+
+        :return: Returns list of all valid moves for player
+        :rtype: List[str]
+        """
         return self.possible_moves()
 
-    def possible_moves(self):
-        """"""
+    def possible_moves(self) -> List[str]:
+        """
+        All possible moves without regard for checks.
+
+        :return: All possible moves without regard for checks
+        :rtype: List[str]
+        """
         moves = []
         for r in range(len(self.board)):
             for c in range(len(self.board[r])):
@@ -64,8 +166,17 @@ class GameState:
                         self.generate_queen_moves(r, c, moves)
         return moves
 
-    def generate_pawn_moves(self, r, c, moves):
-        """"""
+    def generate_pawn_moves(self, r: str, c: str, moves: List[str]):
+        """
+        Appends all possible legal moves made by the pawn at the current position to moves
+
+        :param r: The current column of the pawn
+        :type r: str
+        :param c: The current row of the pawn
+        :type c: str
+        :param moves: All current valid moves
+        :type moves: List[str]
+        """
         prefix = "b" if self.white_to_move else "w"
         change = -1 if self.white_to_move else +1
         start_row = 6 if self.white_to_move else 1
@@ -79,8 +190,17 @@ class GameState:
             if self.board[r + change][c + 1][0] == prefix:
                 moves.append(Move((r, c), (r + change, c + 1), self.board))
 
-    def generate_knight_moves(self, r, c, moves):
-        """"""
+    def generate_knight_moves(self, r: str, c: str, moves: List[str]):
+        """
+        Appends all possible legal moves made by the knight at the current position to moves
+
+        :param r: The current column of the knight
+        :type r: str
+        :param c: The current row of the knight
+        :type c: str
+        :param moves: All current valid moves
+        :type moves: List[str]
+        """
         same_color = "w" if self.white_to_move else "b"
         deltas = [(-2, -1), (-2, +1), (+2, -1), (+2, +1), (-1, -2), (-1, +2), (+1, -2), (+1, +2)]
 
@@ -92,8 +212,17 @@ class GameState:
         for next_move in results:
             moves.append(Move((r, c), next_move, self.board))
 
-    def generate_bishop_moves(self, r, c, moves):
-        """"""
+    def generate_bishop_moves(self, r: str, c: str, moves: List[str]):
+        """
+        Appends all possible legal moves made by the bishop at the current position to moves
+
+        :param r: The current column of the bishop
+        :type r: str
+        :param c: The current row of the bishop
+        :type c: str
+        :param moves: All current valid moves
+        :type moves: List[str]
+        """
         same_color = "w" if self.white_to_move else "b"
         other_color = "b" if self.white_to_move else "w"
         deltas = [(+1, +1), (+1, -1), (-1, +1), (-1, -1)]
@@ -109,21 +238,39 @@ class GameState:
                 moves.append(Move((r, c), next_move, self.board))
                 next_move = (next_move[0] + delta[0], next_move[1] + delta[1])
 
-    def generate_king_moves(self, r, c, moves):
-        """"""
+    def generate_king_moves(self, r: str, c: str, moves: List[str]):
+        """
+        Appends all possible legal moves made by the king at the current position to moves
+
+        :param r: The current column of the king
+        :type r: str
+        :param c: The current row of the king
+        :type c: str
+        :param moves: All current valid moves
+        :type moves: List[str]
+        """
         same_color = "w" if self.white_to_move else "b"
         deltas = [(+1, +1), (+1, -1), (-1, +1), (-1, -1), (+1, 0), (0, +1), (-1, 0), (0, -1)]
 
         def valid_position(move):
             return 0 <= move[0] <= 7 and 0 <= move[1] <= 7 and self.board[move[0]][move[1]][0] != same_color
 
-        for delta in deltas:
-            next_move = (r + delta[0], c + delta[1])
-            if valid_position(next_move):
-                moves.append(Move((r, c), next_move, self.board))
+        potential_moves = map(lambda delta: (r + delta[0], c + delta[1]), deltas)
+        results = filter(valid_position, potential_moves)
+        for next_move in results:
+            moves.append(Move((r, c), next_move, self.board))
 
-    def generate_queen_moves(self, r, c, moves):
-        """"""
+    def generate_queen_moves(self, r: str, c: str, moves: List[str]):
+        """
+        Appends all possible legal moves made by the queen at the current position to moves
+
+        :param r: The current column of the queen
+        :type r: str
+        :param c: The current row of the queen
+        :type c: str
+        :param moves: All current valid moves
+        :type moves: List[str]
+        """
         same_color = "w" if self.white_to_move else "b"
         other_color = "b" if self.white_to_move else "w"
         deltas = [(+1, +1), (+1, -1), (-1, +1), (-1, -1), (+1, 0), (0, +1), (-1, 0), (0, -1)]
@@ -139,8 +286,17 @@ class GameState:
                 moves.append(Move((r, c), next_move, self.board))
                 next_move = (next_move[0] + delta[0], next_move[1] + delta[1])
 
-    def generate_rook_moves(self, r, c, moves):
-        """"""
+    def generate_rook_moves(self, r: str, c: str, moves: List[str]):
+        """
+        Appends all possible legal moves made by the rook at the current position to moves
+
+        :param r: The current column of the rook
+        :type r: str
+        :param c: The current row of the rook
+        :type c: str
+        :param moves: All current valid moves
+        :type moves: List[str]
+        """
         same_color = "w" if self.white_to_move else "b"
         other_color = "b" if self.white_to_move else "w"
         deltas = [(+1, 0), (0, +1), (-1, 0), (0, -1)]
@@ -157,33 +313,3 @@ class GameState:
                 next_move = (next_move[0] + delta[0], next_move[1] + delta[1])
 
 
-class Move:
-    """"""
-    ranks_to_rows = {"1": 7, "2": 6, "3": 5, "4": 4, "5": 3, "6": 2, "7": 1, "8": 0}
-    rows_to_ranks = {v: k for k, v in ranks_to_rows.items()}
-    files_to_cols = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "g": 6, "h": 7}
-    cols_to_files = {v: k for k, v in files_to_cols.items()}
-
-    def __init__(self, start_sq, end_sq, board):
-        """"""
-        self.start_row = start_sq[0]
-        self.start_col = start_sq[1]
-        self.end_row = end_sq[0]
-        self.end_col = end_sq[1]
-        self.piece_moved = board[self.start_row][self.start_col]
-        self.piece_captured = board[self.end_row][self.end_col]
-        self.hash_code = self.start_row * 1000 + self.start_col * 100 + self.end_row * 10 + self.end_col
-
-    def __eq__(self, other):
-        """"""
-        if isinstance(other, Move):
-            return self.hash_code == other.hash_code
-        return False
-
-    def get_chess_notation(self):
-        """"""
-        return self.get_rank_file(self.start_row, self.start_col) + self.get_rank_file(self.end_row, self.end_col)
-
-    def get_rank_file(self, r, c):
-        """"""
-        return self.cols_to_files[c] + self.rows_to_ranks[r]
