@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 from typing import Dict
 from typing import Any
 
@@ -104,8 +104,15 @@ class GameState:
             ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
             ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
         ]
+        self.move_functions = {"p": self.generate_pawn_moves, "R": self.generate_rook_moves,
+                               "N": self.generate_knight_moves, "B": self.generate_bishop_moves,
+                               "K": self.generate_king_moves, "Q": self.generate_queen_moves}
         self.white_to_move = True
         self.move_log = []
+        self.white_king_location = (7, 4)
+        self.black_king_location = (0, 4)
+        self.checkmate = False
+        self.stalemate = False
 
     def make_move(self, move: Move):
         """
@@ -118,30 +125,81 @@ class GameState:
         self.board[move.start_row][move.start_col] = "--"
         self.board[move.end_row][move.end_col] = move.piece_moved
         self.move_log.append(move)
+        if move.piece_moved[1] == "wK":
+            self.white_king_location = (move.end_row, move.end_col)
+        elif move.piece_moved[1] == "bK":
+            self.black_king_location = (move.end_row, move.end_col)
         self.white_to_move = not self.white_to_move
 
     def undo(self):
         """
         Reverses the latest move in the move log.
         """
-        if len(self.move_log) != 0:
-            move = self.move_log.pop()
-            self.board[move.start_row][move.start_col] = move.piece_moved
-            self.board[move.end_row][move.end_col] = move.piece_captured
-            self.white_to_move = not self.white_to_move
+        if len(self.move_log) == 0:
+            return
+        move = self.move_log.pop()
+        self.board[move.start_row][move.start_col] = move.piece_moved
+        self.board[move.end_row][move.end_col] = move.piece_captured
+        self.white_to_move = not self.white_to_move
+        if move.piece_moved[1] == "wK":
+            self.white_king_location = (move.start_row, move.start_col)
+        elif move.piece_moved[1] == "bK":
+            self.black_king_location = (move.start_row, move.start_col)
 
     def valid_moves(self):
         """
-        Filters possible moves by removing checks.
+        Filters possible moves by removing checks and then returns the moves.
 
         :return: Returns list of all valid moves for player
         :rtype: List[str]
         """
-        return self.possible_moves()
+        moves = self.possible_moves()
+        for i in range(len(moves) - 1, -1, -1):
+            self.make_move(moves[i])
+            self.white_to_move = not self.white_to_move
+            if self.is_check():
+                print("Check!")
+                moves.remove(moves[i])
+            self.white_to_move = not self.white_to_move
+            self.undo()
+
+        return moves
+
+    def is_check(self) -> bool:
+        """
+        Return whether the current player's king is in check.
+
+        :return: True if current player's king is in check, otherwise False
+        :rtype: bool
+        """
+        if self.white_to_move:
+            return self.is_square_under_attack(self.white_king_location[0], self.white_king_location[1])
+        else:
+            return self.is_square_under_attack(self.black_king_location[0], self.black_king_location[1])
+
+    def is_square_under_attack(self, r, c) -> bool:
+        """
+        Takes in the row and the column for the square we want to check.
+        Returns whether that square is attacked or not.
+
+        :param r: The row of the square
+        :type r: int
+        :param c: The column of the square
+        :type c: int
+        :return: True if current square is attacked, otherwise False
+        :rtype: bool
+        """
+        self.white_to_move = not self.white_to_move
+        opponent_moves = self.possible_moves()
+        self.white_to_move = not self.white_to_move
+        for move in opponent_moves:
+            if move.end_row == r and move.end_col == c:
+                return True
+        return False
 
     def possible_moves(self) -> List[Move]:
         """
-        All possible moves without regard for checks.
+        Returns all possible moves without regard for checks.
 
         :return: All possible moves without regard for checks
         :rtype: List[Move]
@@ -152,19 +210,7 @@ class GameState:
                 ref = self.board[r][c]
                 color = ref[0]
                 if (color == "w" and self.white_to_move) or (color == "b" and not self.white_to_move):
-                    piece = ref[1]
-                    if piece == "p":
-                        self.generate_pawn_moves(r, c, moves)
-                    elif piece == "R":
-                        self.generate_rook_moves(r, c, moves)
-                    elif piece == "B":
-                        self.generate_bishop_moves(r, c, moves)
-                    elif piece == "N":
-                        self.generate_knight_moves(r, c, moves)
-                    elif piece == "K":
-                        self.generate_king_moves(r, c, moves)
-                    elif piece == "Q":
-                        self.generate_queen_moves(r, c, moves)
+                    self.move_functions[ref[1]](r, c, moves)
         return moves
 
     def generate_pawn_moves(self, r: int, c: int, moves: List[Move]):
@@ -204,12 +250,8 @@ class GameState:
         """
         same_color = "w" if self.white_to_move else "b"
         deltas = [(-2, -1), (-2, +1), (+2, -1), (+2, +1), (-1, -2), (-1, +2), (+1, -2), (+1, +2)]
-
-        def valid_position(move):
-            return 0 <= move[0] <= 7 and 0 <= move[1] <= 7 and self.board[move[0]][move[1]][0] != same_color
-
         potential_moves = map(lambda delta: (r + delta[0], c + delta[1]), deltas)
-        results = filter(valid_position, potential_moves)
+        results = filter(lambda move: self.valid_piece_position(move, same_color), potential_moves)
         for next_move in results:
             moves.append(Move((r, c), next_move, self.board))
 
@@ -227,14 +269,10 @@ class GameState:
         same_color = "w" if self.white_to_move else "b"
         other_color = "b" if self.white_to_move else "w"
         deltas = [(+1, +1), (+1, -1), (-1, +1), (-1, -1)]
-
-        def valid_position(move):
-            return 0 <= move[0] <= 7 and 0 <= move[1] <= 7 and self.board[move[0]][move[1]][0] != same_color
-
         for delta in deltas:
             next_move = (r + delta[0], c + delta[1])
             captures = False
-            while valid_position(next_move) and not captures:
+            while self.valid_piece_position(next_move, same_color) and not captures:
                 captures = self.board[next_move[0]][next_move[1]][0] == other_color
                 moves.append(Move((r, c), next_move, self.board))
                 next_move = (next_move[0] + delta[0], next_move[1] + delta[1])
@@ -252,12 +290,8 @@ class GameState:
         """
         same_color = "w" if self.white_to_move else "b"
         deltas = [(+1, +1), (+1, -1), (-1, +1), (-1, -1), (+1, 0), (0, +1), (-1, 0), (0, -1)]
-
-        def valid_position(move):
-            return 0 <= move[0] <= 7 and 0 <= move[1] <= 7 and self.board[move[0]][move[1]][0] != same_color
-
         potential_moves = map(lambda delta: (r + delta[0], c + delta[1]), deltas)
-        results = filter(valid_position, potential_moves)
+        results = filter(lambda move: self.valid_piece_position(move, same_color), potential_moves)
         for next_move in results:
             moves.append(Move((r, c), next_move, self.board))
 
@@ -275,14 +309,10 @@ class GameState:
         same_color = "w" if self.white_to_move else "b"
         other_color = "b" if self.white_to_move else "w"
         deltas = [(+1, +1), (+1, -1), (-1, +1), (-1, -1), (+1, 0), (0, +1), (-1, 0), (0, -1)]
-
-        def valid_position(move):
-            return 0 <= move[0] <= 7 and 0 <= move[1] <= 7 and self.board[move[0]][move[1]][0] != same_color
-
         for delta in deltas:
             next_move = (r + delta[0], c + delta[1])
             captures = False
-            while valid_position(next_move) and not captures:
+            while self.valid_piece_position(next_move, same_color) and not captures:
                 captures = self.board[next_move[0]][next_move[1]][0] == other_color
                 moves.append(Move((r, c), next_move, self.board))
                 next_move = (next_move[0] + delta[0], next_move[1] + delta[1])
@@ -302,13 +332,24 @@ class GameState:
         other_color = "b" if self.white_to_move else "w"
         deltas = [(+1, 0), (0, +1), (-1, 0), (0, -1)]
 
-        def valid_position(move):
-            return 0 <= move[0] <= 7 and 0 <= move[1] <= 7 and self.board[move[0]][move[1]][0] != same_color
-
         for delta in deltas:
             next_move = (r + delta[0], c + delta[1])
             captures = False
-            while valid_position(next_move) and not captures:
+            while self.valid_piece_position(next_move, same_color) and not captures:
                 captures = self.board[next_move[0]][next_move[1]][0] == other_color
                 moves.append(Move((r, c), next_move, self.board))
                 next_move = (next_move[0] + delta[0], next_move[1] + delta[1])
+
+    def valid_piece_position(self, move: Tuple[int, int], same_color: str) -> bool:
+        """
+        Takes in a tuple representing the ending squares and a string of the color of the moving piece.
+        Returns True if the move is within bounds and not landing on another piece of the same color.
+
+        :param move: A tuple representing the ending moves row and column
+        :type move: Tuple[int, int]
+        :param same_color: A string representing the color of the moving piece, either w or b
+        :type same_color: str
+        :return: A boolean declaring if the move is within bounds and not ending on a piece of the same color
+        :rtype: bool
+        """
+        return 0 <= move[0] <= 7 and 0 <= move[1] <= 7 and self.board[move[0]][move[1]][0] != same_color
