@@ -3,6 +3,18 @@ from typing import Dict
 from typing import Any
 
 
+STARTING_BOARD = (
+            ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
+            ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
+            ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
+        )
+
+
 class Move:
     """
     Class representing a move.
@@ -93,17 +105,8 @@ class GameState:
     :type self.move_log: List[str]
     """
 
-    def __init__(self):
-        self.board = [
-            ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
-            ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
-            ["--", "--", "--", "--", "--", "--", "--", "--"],
-            ["--", "--", "--", "--", "--", "--", "--", "--"],
-            ["--", "--", "--", "--", "--", "--", "--", "--"],
-            ["--", "--", "--", "--", "--", "--", "--", "--"],
-            ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
-            ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
-        ]
+    def __init__(self, board=STARTING_BOARD):
+        self.board = board
         self.move_functions = {"p": self.generate_pawn_moves, "R": self.generate_rook_moves,
                                "N": self.generate_knight_moves, "B": self.generate_bishop_moves,
                                "K": self.generate_king_moves, "Q": self.generate_queen_moves}
@@ -125,9 +128,9 @@ class GameState:
         self.board[move.start_row][move.start_col] = "--"
         self.board[move.end_row][move.end_col] = move.piece_moved
         self.move_log.append(move)
-        if move.piece_moved[1] == "wK":
+        if move.piece_moved == "wK":
             self.white_king_location = (move.end_row, move.end_col)
-        elif move.piece_moved[1] == "bK":
+        elif move.piece_moved == "bK":
             self.black_king_location = (move.end_row, move.end_col)
         self.white_to_move = not self.white_to_move
 
@@ -141,12 +144,12 @@ class GameState:
         self.board[move.start_row][move.start_col] = move.piece_moved
         self.board[move.end_row][move.end_col] = move.piece_captured
         self.white_to_move = not self.white_to_move
-        if move.piece_moved[1] == "wK":
+        if move.piece_moved == "wK":
             self.white_king_location = (move.start_row, move.start_col)
-        elif move.piece_moved[1] == "bK":
+        elif move.piece_moved == "bK":
             self.black_king_location = (move.start_row, move.start_col)
 
-    def valid_moves(self):
+    def valid_moves(self) -> List[Move]:
         """
         Filters possible moves by removing checks and then returns the moves.
 
@@ -154,48 +157,92 @@ class GameState:
         :rtype: List[str]
         """
         moves = self.possible_moves()
+        for move in moves:
+            print(move.hash_code)
+        prefix = "b" if self.white_to_move else "w"
         for i in range(len(moves) - 1, -1, -1):
-            self.make_move(moves[i])
-            self.white_to_move = not self.white_to_move
-            if self.is_check():
-                print("Check!")
-                moves.remove(moves[i])
-            self.white_to_move = not self.white_to_move
-            self.undo()
+            self.filter_invalid_moves(i, moves, prefix)
 
         return moves
 
-    def is_check(self) -> bool:
-        """
-        Return whether the current player's king is in check.
-
-        :return: True if current player's king is in check, otherwise False
-        :rtype: bool
-        """
-        if self.white_to_move:
-            return self.is_square_under_attack(self.white_king_location[0], self.white_king_location[1])
-        else:
-            return self.is_square_under_attack(self.black_king_location[0], self.black_king_location[1])
-
-    def is_square_under_attack(self, r, c) -> bool:
-        """
-        Takes in the row and the column for the square we want to check.
-        Returns whether that square is attacked or not.
-
-        :param r: The row of the square
-        :type r: int
-        :param c: The column of the square
-        :type c: int
-        :return: True if current square is attacked, otherwise False
-        :rtype: bool
-        """
+    def filter_invalid_moves(self, i, possible_moves, prefix):
+        move_removed = False
+        move = possible_moves[i]
+        self.make_move(move)
         self.white_to_move = not self.white_to_move
-        opponent_moves = self.possible_moves()
+        position = self.white_king_location if self.white_to_move else self.black_king_location
+        moves: List[Move] = []
+        self.generate_attacking_pawn_moves(position[0], position[1], moves)
+        for pawn_move in moves:
+            if self.board[pawn_move.end_row][pawn_move.end_col] == f"{prefix}p":
+                print(f"The move {move.get_chess_notation()} by {move.piece_moved} is illegal")
+                print(f"This is because the pawn on {pawn_move.get_chess_notation()[2:4]} would capture the king")
+                possible_moves.pop(i)
+                move_removed = True
+            if move_removed:
+                break
+        if not move_removed:
+            moves: List[Move] = []
+            self.generate_bishop_moves(position[0], position[1], moves)
+            for bishop_move in moves:
+                if self.board[bishop_move.end_row][bishop_move.end_col] == f"{prefix}B":
+                    print(f"The move {move.get_chess_notation()} by {move.piece_moved} is illegal")
+                    print(
+                        f"This is because the bishop on {bishop_move.get_chess_notation()[2:4]} would capture the king")
+                    possible_moves.pop(i)
+                    move_removed = True
+                if move_removed:
+                    break
+        if not move_removed:
+            moves: List[Move] = []
+            self.generate_knight_moves(position[0], position[1], moves)
+            for knight_move in moves:
+                if self.board[knight_move.end_row][knight_move.end_col] == f"{prefix}N":
+                    print(f"The move {move.get_chess_notation()} by {move.piece_moved} is illegal")
+                    print(
+                        f"This is because the knight on {knight_move.get_chess_notation()[2:4]} would capture the king")
+                    possible_moves.pop(i)
+                    move_removed = True
+                if move_removed:
+                    break
+        if not move_removed:
+            moves: List[Move] = []
+            self.generate_rook_moves(position[0], position[1], moves)
+            for rook_move in moves:
+                if self.board[rook_move.end_row][rook_move.end_col] == f"{prefix}R":
+                    print(f"The move {move.get_chess_notation()} by {move.piece_moved} is illegal")
+                    print(
+                        f"This is because the rook on {rook_move.get_chess_notation()[2:4]} would capture the king")
+                    possible_moves.pop(i)
+                    move_removed = True
+                if move_removed:
+                    break
+        if not move_removed:
+            moves: List[Move] = []
+            self.generate_queen_moves(position[0], position[1], moves)
+            for queen_move in moves:
+                if self.board[queen_move.end_row][queen_move.end_col] == f"{prefix}Q":
+                    print(f"The move {move.get_chess_notation()} by {move.piece_moved} is illegal")
+                    print(
+                        f"This is because the queen on {queen_move.get_chess_notation()[2:4]} would capture the king")
+                    possible_moves.pop(i)
+                    move_removed = True
+                if move_removed:
+                    break
+        if not move_removed:
+            moves: List[Move] = []
+            self.generate_king_moves(position[0], position[1], moves)
+            for king_move in moves:
+                if self.board[king_move.end_row][king_move.end_col] == f"{prefix}K":
+                    print(f"The move {move.get_chess_notation()} by {move.piece_moved} is illegal")
+                    print(
+                        f"This is because the king on {king_move.get_chess_notation()[2:4]} would capture the king")
+                    possible_moves.pop(i)
+                    move_removed = True
+                if move_removed:
+                    break
         self.white_to_move = not self.white_to_move
-        for move in opponent_moves:
-            if move.end_row == r and move.end_col == c:
-                return True
-        return False
+        self.undo()
 
     def possible_moves(self) -> List[Move]:
         """
@@ -224,13 +271,17 @@ class GameState:
         :param moves: All current valid moves
         :type moves: List[Move]
         """
-        prefix = "b" if self.white_to_move else "w"
         change = -1 if self.white_to_move else +1
         start_row = 6 if self.white_to_move else 1
         if self.board[r + change][c] == "--":
             moves.append(Move((r, c), (r + change, c), self.board))
             if r == start_row and self.board[r + (change * 2)][c] == "--":
                 moves.append(Move((r, c), (r + (change * 2), c), self.board))
+        self.generate_attacking_pawn_moves(r, c, moves)
+
+    def generate_attacking_pawn_moves(self, r, c, moves):
+        prefix = "b" if self.white_to_move else "w"
+        change = -1 if self.white_to_move else +1
         if c - 1 >= 0 and c + 1 <= 7:
             if self.board[r + change][c - 1][0] == prefix:
                 moves.append(Move((r, c), (r + change, c - 1), self.board))
