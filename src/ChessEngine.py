@@ -157,8 +157,6 @@ class GameState:
         :rtype: List[str]
         """
         moves = self.possible_moves()
-        for move in moves:
-            print(move.hash_code)
         prefix = "b" if self.white_to_move else "w"
         for i in range(len(moves) - 1, -1, -1):
             self.filter_invalid_moves(i, moves, prefix)
@@ -175,8 +173,9 @@ class GameState:
         self.generate_attacking_pawn_moves(position[0], position[1], moves)
         for pawn_move in moves:
             if self.board[pawn_move.end_row][pawn_move.end_col] == f"{prefix}p":
-                print(f"The move {move.get_chess_notation()} by {move.piece_moved} is illegal")
-                print(f"This is because the pawn on {pawn_move.get_chess_notation()[2:4]} would capture the king")
+                # print-lines for debugging check filters
+                # print(f"The move {move.get_chess_notation()} by {move.piece_moved} is illegal")
+                # print(f"This is because the pawn on {pawn_move.get_chess_notation()[2:4]} would capture the king")
                 possible_moves.pop(i)
                 move_removed = True
             if move_removed:

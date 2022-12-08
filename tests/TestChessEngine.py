@@ -415,7 +415,7 @@ class MyTestCase(unittest.TestCase):
 
         correct_moves_two = [
             Move((4, 6), (3, 5), knight_board_one), Move((4, 6), (4, 5), knight_board_one),
-            Move((4, 6), (5, 7), knight_board_one), Move((4, 6), (3, 7), knight_board_one),
+            Move((4, 6), (5, 5), knight_board_one), Move((4, 6), (3, 7), knight_board_one),
             Move((4, 6), (4, 7), knight_board_one), Move((4, 6), (5, 7), knight_board_one)
         ]
 
@@ -429,6 +429,15 @@ class MyTestCase(unittest.TestCase):
         for move in test_moves_one:
             self.assertTrue(move in correct_moves_one,
                             f"Incorrect move added for first board, "
+                            f"piece {move.piece_moved} moved {move.get_chess_notation()}")
+
+        # Tests second board
+        self.assertEqual(len(test_moves_two), len(correct_moves_two),
+                         f"Incorrect number of valid moves for second board, should be "
+                         f"{len(correct_moves_two)} but was {len(test_moves_two)}")
+        for move in test_moves_two:
+            self.assertTrue(move in correct_moves_two,
+                            f"Incorrect move added for second board, "
                             f"piece {move.piece_moved} moved {move.get_chess_notation()}")
 
     def test_king_checks(self):
