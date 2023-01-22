@@ -17,17 +17,17 @@ class MyTestCase(unittest.TestCase):
         ]
 
         correct_moves_one = [
-             Move((6, 0), (5, 0), board_one), Move((6, 0), (4, 0), board_one),
-             Move((6, 1), (5, 1), board_one), Move((6, 1), (4, 1), board_one),
-             Move((6, 2), (5, 2), board_one), Move((6, 2), (4, 2), board_one),
-             Move((6, 3), (5, 3), board_one), Move((6, 3), (4, 3), board_one),
-             Move((6, 4), (5, 4), board_one), Move((6, 4), (4, 4), board_one),
-             Move((6, 5), (5, 5), board_one), Move((6, 5), (4, 5), board_one),
-             Move((6, 6), (5, 6), board_one), Move((6, 6), (4, 6), board_one),
-             Move((6, 7), (5, 7), board_one), Move((6, 7), (4, 7), board_one),
-             Move((7, 1), (5, 0), board_one), Move((7, 1), (5, 2), board_one),
-             Move((7, 6), (5, 5), board_one), Move((7, 6), (5, 7), board_one),
-                             ]
+            Move((6, 0), (5, 0), board_one), Move((6, 0), (4, 0), board_one),
+            Move((6, 1), (5, 1), board_one), Move((6, 1), (4, 1), board_one),
+            Move((6, 2), (5, 2), board_one), Move((6, 2), (4, 2), board_one),
+            Move((6, 3), (5, 3), board_one), Move((6, 3), (4, 3), board_one),
+            Move((6, 4), (5, 4), board_one), Move((6, 4), (4, 4), board_one),
+            Move((6, 5), (5, 5), board_one), Move((6, 5), (4, 5), board_one),
+            Move((6, 6), (5, 6), board_one), Move((6, 6), (4, 6), board_one),
+            Move((6, 7), (5, 7), board_one), Move((6, 7), (4, 7), board_one),
+            Move((7, 1), (5, 0), board_one), Move((7, 1), (5, 2), board_one),
+            Move((7, 6), (5, 5), board_one), Move((7, 6), (5, 7), board_one),
+        ]
         gs_one = GameState(board_one)
         test_moves_one = gs_one.possible_moves()
 
@@ -43,22 +43,22 @@ class MyTestCase(unittest.TestCase):
         ]
 
         correct_moves_two = [
-             Move((3, 1), (4, 2), board_two), Move((3, 1), (5, 3), board_two),
-             Move((3, 1), (6, 4), board_two), Move((3, 1), (7, 5), board_two),
-             Move((3, 1), (4, 0), board_two), Move((3, 1), (2, 2), board_two),
-             Move((3, 1), (2, 0), board_two), Move((6, 0), (5, 0), board_two),
-             Move((6, 0), (4, 0), board_two), Move((6, 1), (5, 1), board_two),
-             Move((6, 1), (4, 1), board_two), Move((6, 2), (5, 2), board_two),
-             Move((6, 2), (4, 2), board_two), Move((6, 3), (5, 3), board_two),
-             Move((6, 3), (4, 3), board_two), Move((6, 5), (5, 5), board_two),
-             Move((6, 5), (4, 5), board_two), Move((6, 6), (5, 6), board_two),
-             Move((6, 6), (4, 6), board_two), Move((6, 7), (5, 7), board_two),
-             Move((6, 7), (4, 7), board_two), Move((7, 1), (5, 0), board_two),
-             Move((7, 1), (5, 2), board_two), Move((7, 3), (6, 4), board_two),
-             Move((7, 3), (5, 5), board_two), Move((7, 3), (4, 6), board_two),
-             Move((7, 3), (3, 7), board_two), Move((7, 4), (7, 5), board_two),
-             Move((7, 4), (6, 4), board_two), Move((7, 7), (7, 6), board_two),
-             Move((7, 7), (7, 5), board_two)
+            Move((3, 1), (4, 2), board_two), Move((3, 1), (5, 3), board_two),
+            Move((3, 1), (6, 4), board_two), Move((3, 1), (7, 5), board_two),
+            Move((3, 1), (4, 0), board_two), Move((3, 1), (2, 2), board_two),
+            Move((3, 1), (2, 0), board_two), Move((6, 0), (5, 0), board_two),
+            Move((6, 0), (4, 0), board_two), Move((6, 1), (5, 1), board_two),
+            Move((6, 1), (4, 1), board_two), Move((6, 2), (5, 2), board_two),
+            Move((6, 2), (4, 2), board_two), Move((6, 3), (5, 3), board_two),
+            Move((6, 3), (4, 3), board_two), Move((6, 5), (5, 5), board_two),
+            Move((6, 5), (4, 5), board_two), Move((6, 6), (5, 6), board_two),
+            Move((6, 6), (4, 6), board_two), Move((6, 7), (5, 7), board_two),
+            Move((6, 7), (4, 7), board_two), Move((7, 1), (5, 0), board_two),
+            Move((7, 1), (5, 2), board_two), Move((7, 3), (6, 4), board_two),
+            Move((7, 3), (5, 5), board_two), Move((7, 3), (4, 6), board_two),
+            Move((7, 3), (3, 7), board_two), Move((7, 4), (7, 5), board_two),
+            Move((7, 4), (6, 4), board_two), Move((7, 7), (7, 6), board_two),
+            Move((7, 7), (7, 5), board_two)
         ]
         gs_two = GameState(board_two)
         test_moves_two = gs_two.possible_moves()
@@ -90,7 +90,7 @@ class MyTestCase(unittest.TestCase):
             Move((3, 6), (4, 5), board_three), Move((3, 6), (2, 5), board_three),
             Move((3, 6), (4, 6), board_three), Move((3, 6), (3, 7), board_three),
             Move((3, 6), (2, 6), board_three),
-            ]
+        ]
         gs_three = GameState(board_three)
         test_moves_three = gs_three.possible_moves()
 
@@ -99,7 +99,6 @@ class MyTestCase(unittest.TestCase):
                          f"Incorrect number of valid moves for first board, should be "
                          f"{len(correct_moves_one)} but was {len(test_moves_one)}")
         for move in test_moves_one:
-
             self.assertTrue(move in correct_moves_one,
                             f"Incorrect move added for first board, "
                             f"piece {move.piece_moved} moved {move.get_chess_notation()}")
@@ -467,6 +466,246 @@ class MyTestCase(unittest.TestCase):
             self.assertTrue(move in correct_moves,
                             f"Incorrect move added for first board, "
                             f"piece {move.piece_moved} moved {move.get_chess_notation()}")
+
+    def test_in_check(self):
+        pawn_board = [
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "bp", "--", "--", "--"],
+            ["--", "--", "--", "wK", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"]
+        ]
+
+        pawn_gs = GameState(pawn_board)
+        pawn_gs.white_king_location = (6, 3)
+
+        rook_board = [
+            ["--", "--", "--", "--", "--", "--", "--", "bR"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "wK"]
+        ]
+
+        rook_gs = GameState(rook_board)
+        rook_gs.white_king_location = (7, 7)
+
+        bishop_board = [
+            ["bB", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "wK"]
+        ]
+
+        bishop_gs = GameState(bishop_board)
+        bishop_gs.white_king_location = (7, 7)
+
+        queen_board = [
+            ["bQ", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "wK"]
+        ]
+
+        queen_gs = GameState(queen_board)
+        queen_gs.white_king_location = (7, 7)
+
+        knight_board = [
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "bN", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "wK", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"]
+        ]
+
+        knight_gs = GameState(knight_board)
+        knight_gs.white_king_location = (6, 3)
+
+        no_check_board = [
+            ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
+            ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
+            ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
+        ]
+
+        no_check_gs = GameState(no_check_board)
+
+        self.assertTrue(pawn_gs.in_check(), "King should be in check from pawn")
+        self.assertTrue(knight_gs.in_check(), "King should be in check from knight")
+        self.assertTrue(bishop_gs.in_check(), "King should be in check from bishop")
+        self.assertTrue(rook_gs.in_check(), "King should be in check from rook")
+        self.assertTrue(queen_gs.in_check(), "King should be in check from queen")
+        self.assertFalse(no_check_gs.in_check(), "King should not be in check from any piece")
+
+    def test_checkmate(self):
+        queen_checkmate = [
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "bK", "--"],
+            ["--", "--", "--", "--", "--", "--", "bQ", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "wK"]
+        ]
+
+        bishop_checkmate = [
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "bK", "--"],
+            ["--", "--", "--", "--", "--", "bB", "bB", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "wK"]
+        ]
+
+        knight_checkmate = [
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "bN", "bK", "--"],
+            ["--", "--", "--", "--", "--", "bN", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "wK"]
+        ]
+
+        rook_checkmate = [
+            ["--", "--", "--", "--", "--", "--", "--", "bR"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "bK", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "wK"]
+        ]
+
+        no_checkmate_one_board = [
+            ["--", "--", "--", "--", "--", "--", "--", "bR"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "bk", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "wK"]
+        ]
+
+        no_checkmate_two_board = [
+            ["--", "--", "--", "--", "--", "--", "--", "bR"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "bQ", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "wK"]
+        ]
+
+        checkmate_one = GameState(queen_checkmate)
+        checkmate_two = GameState(bishop_checkmate)
+        checkmate_three = GameState(knight_checkmate)
+        checkmate_four = GameState(rook_checkmate)
+
+        no_checkmate_one = GameState(no_checkmate_one_board)
+        no_checkmate_two = GameState(no_checkmate_two_board)
+
+        checkmate_one.white_king_location = (7, 7)
+        checkmate_two.white_king_location = (7, 7)
+        checkmate_three.white_king_location = (7, 7)
+        checkmate_four.white_king_location = (7, 7)
+
+        no_checkmate_one.white_king_location = (7, 7)
+        no_checkmate_two.white_king_location = (7, 7)
+
+        self.assertTrue(checkmate_one.in_check() and not checkmate_one.possible_moves(),
+                        "King should be in checkmate from queen")
+        self.assertTrue(checkmate_two.in_check() and not checkmate_two.possible_moves(),
+                        "King should be in checkmate from bishops")
+        self.assertTrue(checkmate_three.in_check() and not checkmate_three.possible_moves(),
+                        "King should be in checkmate from knights")
+        self.assertTrue(checkmate_four.in_check() and not checkmate_four.possible_moves(),
+                        "King should be in checkmate from rook")
+
+        self.assertFalse(no_checkmate_one_board.in_check() and not no_checkmate_one.possible_moves(),
+                         "King should not be in checkmate because Kg1 is a legal move")
+        self.assertFalse(no_checkmate_two_board.in_check() and not no_checkmate_two.possible_moves(),
+                         "King should not be in checkmate because Kxg2 is a legal move")
+
+    def test_stalemate(self):
+        queen_stalemate = [
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "bK", "--"],
+            ["--", "--", "--", "--", "--", "--", "bQ", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "wK"]
+        ]
+
+        rook_stalemate = [
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "bK", "bR", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "wK"]
+        ]
+
+        no_stalemate = [
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "bK", "bQ"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "wK"]
+        ]
+
+        stalemate_one = GameState(queen_stalemate)
+        stalemate_two = GameState(rook_stalemate)
+
+        no_stalemate = GameState(no_stalemate)
+
+        stalemate_one.white_king_location = (7, 7)
+        stalemate_two.white_king_location = (7, 7)
+
+        no_stalemate.white_king_location = (7, 7)
+
+        self.assertTrue(not stalemate_one.in_check() and not stalemate_one.possible_moves(),
+                        "Should be stalemate as there are no legal moves")
+        self.assertTrue(not stalemate_two.in_check() and not stalemate_two.possible_moves(),
+                        "Should be stalemate as there are no legal moves")
+
+        self.assertFalse(not no_stalemate.in_check() and not no_stalemate.possible_moves(),
+                         "Should not be stalemate as Kg1 is a legal move")
 
 
 if __name__ == '__main__':

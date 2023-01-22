@@ -115,7 +115,6 @@ class GameState:
         self.white_king_location = (7, 4)
         self.black_king_location = (0, 4)
         self.checkmate = False
-        self.stalemate = False
 
     def make_move(self, move: Move):
         """
@@ -138,7 +137,7 @@ class GameState:
         """
         Reverses the latest move in the move log.
         """
-        if len(self.move_log) == 0:
+        if not self.move_log:
             return
         move = self.move_log.pop()
         self.board[move.start_row][move.start_col] = move.piece_moved
@@ -157,91 +156,71 @@ class GameState:
         :rtype: List[str]
         """
         moves = self.possible_moves()
-        prefix = "b" if self.white_to_move else "w"
         for i in range(len(moves) - 1, -1, -1):
-            self.filter_invalid_moves(i, moves, prefix)
-
+            self.filter_invalid_moves(i, moves)
+        if not moves:
+            is_checkmate = self.in_check()
+            self.checkmate = is_checkmate
         return moves
 
-    def filter_invalid_moves(self, i, possible_moves, prefix):
-        move_removed = False
+    def filter_invalid_moves(self, i, possible_moves):
+        """
+        Makes a possible move, then checks if the king is attacked by any opposing piece.
+        If it is attacked, then that is an invalid move and that move is filtered out.
+
+        :param i: Index of the possible move to be checked
+        :type i: int
+        :param possible_moves: All the possible moves to check
+        :type possible_moves: List[Move]
+        """
         move = possible_moves[i]
         self.make_move(move)
         self.white_to_move = not self.white_to_move
+        remove_move = self.in_check()
+        if remove_move:
+            possible_moves.pop(i)
+        self.white_to_move = not self.white_to_move
+        self.undo()
+
+    def in_check(self) -> bool:
+        """
+        Returns true if king is in check, otherwise returns false.
+
+        :return: If the king is in check
+        :rtype: bool
+        """
         position = self.white_king_location if self.white_to_move else self.black_king_location
+        prefix = "b" if self.white_to_move else "w"
         moves: List[Move] = []
         self.generate_attacking_pawn_moves(position[0], position[1], moves)
         for pawn_move in moves:
             if self.board[pawn_move.end_row][pawn_move.end_col] == f"{prefix}p":
-                # print-lines for debugging check filters
-                # print(f"The move {move.get_chess_notation()} by {move.piece_moved} is illegal")
-                # print(f"This is because the pawn on {pawn_move.get_chess_notation()[2:4]} would capture the king")
-                possible_moves.pop(i)
-                move_removed = True
-            if move_removed:
-                break
-        if not move_removed:
-            moves: List[Move] = []
-            self.generate_bishop_moves(position[0], position[1], moves)
-            for bishop_move in moves:
-                if self.board[bishop_move.end_row][bishop_move.end_col] == f"{prefix}B":
-                    print(f"The move {move.get_chess_notation()} by {move.piece_moved} is illegal")
-                    print(
-                        f"This is because the bishop on {bishop_move.get_chess_notation()[2:4]} would capture the king")
-                    possible_moves.pop(i)
-                    move_removed = True
-                if move_removed:
-                    break
-        if not move_removed:
-            moves: List[Move] = []
-            self.generate_knight_moves(position[0], position[1], moves)
-            for knight_move in moves:
-                if self.board[knight_move.end_row][knight_move.end_col] == f"{prefix}N":
-                    print(f"The move {move.get_chess_notation()} by {move.piece_moved} is illegal")
-                    print(
-                        f"This is because the knight on {knight_move.get_chess_notation()[2:4]} would capture the king")
-                    possible_moves.pop(i)
-                    move_removed = True
-                if move_removed:
-                    break
-        if not move_removed:
-            moves: List[Move] = []
-            self.generate_rook_moves(position[0], position[1], moves)
-            for rook_move in moves:
-                if self.board[rook_move.end_row][rook_move.end_col] == f"{prefix}R":
-                    print(f"The move {move.get_chess_notation()} by {move.piece_moved} is illegal")
-                    print(
-                        f"This is because the rook on {rook_move.get_chess_notation()[2:4]} would capture the king")
-                    possible_moves.pop(i)
-                    move_removed = True
-                if move_removed:
-                    break
-        if not move_removed:
-            moves: List[Move] = []
-            self.generate_queen_moves(position[0], position[1], moves)
-            for queen_move in moves:
-                if self.board[queen_move.end_row][queen_move.end_col] == f"{prefix}Q":
-                    print(f"The move {move.get_chess_notation()} by {move.piece_moved} is illegal")
-                    print(
-                        f"This is because the queen on {queen_move.get_chess_notation()[2:4]} would capture the king")
-                    possible_moves.pop(i)
-                    move_removed = True
-                if move_removed:
-                    break
-        if not move_removed:
-            moves: List[Move] = []
-            self.generate_king_moves(position[0], position[1], moves)
-            for king_move in moves:
-                if self.board[king_move.end_row][king_move.end_col] == f"{prefix}K":
-                    print(f"The move {move.get_chess_notation()} by {move.piece_moved} is illegal")
-                    print(
-                        f"This is because the king on {king_move.get_chess_notation()[2:4]} would capture the king")
-                    possible_moves.pop(i)
-                    move_removed = True
-                if move_removed:
-                    break
-        self.white_to_move = not self.white_to_move
-        self.undo()
+                return True
+        moves: List[Move] = []
+        self.generate_bishop_moves(position[0], position[1], moves)
+        for bishop_move in moves:
+            if self.board[bishop_move.end_row][bishop_move.end_col] == f"{prefix}B":
+                return True
+        moves: List[Move] = []
+        self.generate_knight_moves(position[0], position[1], moves)
+        for knight_move in moves:
+            if self.board[knight_move.end_row][knight_move.end_col] == f"{prefix}N":
+                return True
+        moves: List[Move] = []
+        self.generate_rook_moves(position[0], position[1], moves)
+        for rook_move in moves:
+            if self.board[rook_move.end_row][rook_move.end_col] == f"{prefix}R":
+                return True
+        moves: List[Move] = []
+        self.generate_queen_moves(position[0], position[1], moves)
+        for queen_move in moves:
+            if self.board[queen_move.end_row][queen_move.end_col] == f"{prefix}Q":
+                return True
+        moves: List[Move] = []
+        self.generate_king_moves(position[0], position[1], moves)
+        for king_move in moves:
+            if self.board[king_move.end_row][king_move.end_col] == f"{prefix}K":
+                return True
 
     def possible_moves(self) -> List[Move]:
         """

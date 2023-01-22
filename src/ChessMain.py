@@ -71,6 +71,10 @@ def main():
                         player_clicks = [sq_selected]
         if move_made:
             valid_moves = gs.valid_moves()
+            if not valid_moves:
+                running = False
+                is_checkmate = gs.checkmate
+                print("Checkmate!") if is_checkmate else print("Stalemate :/")
             move_made = False
         clock.tick(MAX_FPS)
         p.display.flip()
