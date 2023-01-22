@@ -121,6 +121,22 @@ class MyTestCase(unittest.TestCase):
                             f"Incorrect move added for third board"
                             f", piece {move.piece_moved} moved {move.get_chess_notation()}")
 
+    def test_pawn_attacking_moves(self):
+        board_one = [
+            ['bR', 'bN', 'bB', 'bQ', 'bK', 'bB', 'bN', 'bR'],
+            ['bp', 'bp', 'bp', 'bp', '--', '--', '--', 'wp'],
+            ['--', '--', '--', '--', 'bp', '--', '--', '--'],
+            ['--', '--', '--', '--', '--', '--', '--', '--'],
+            ['--', '--', '--', '--', '--', '--', '--', '--'],
+            ['--', '--', '--', '--', '--', '--', '--', '--'],
+            ['wp', 'wp', 'wp', 'wp', '--', 'wp', 'wp', 'wp'],
+            ['wR', 'wN', 'wB', 'wQ', 'wK', 'wB', 'wN', 'wR']]
+
+        gs_one = GameState(board_one)
+
+        self.assertTrue(Move((1, 7), (0, 6), board_one) in gs_one.possible_moves(),
+                        "Pawn on edge of board cannot attack")
+
     def test_pawn_checks(self):
         pawn_board = [
             ["--", "--", "--", "--", "--", "--", "--", "--"],
@@ -641,18 +657,18 @@ class MyTestCase(unittest.TestCase):
         no_checkmate_one.white_king_location = (7, 7)
         no_checkmate_two.white_king_location = (7, 7)
 
-        self.assertTrue(checkmate_one.in_check() and not checkmate_one.possible_moves(),
+        self.assertTrue(checkmate_one.in_check() and not checkmate_one.valid_moves(),
                         "King should be in checkmate from queen")
-        self.assertTrue(checkmate_two.in_check() and not checkmate_two.possible_moves(),
+        self.assertTrue(checkmate_two.in_check() and not checkmate_two.valid_moves(),
                         "King should be in checkmate from bishops")
-        self.assertTrue(checkmate_three.in_check() and not checkmate_three.possible_moves(),
+        self.assertTrue(checkmate_three.in_check() and not checkmate_three.valid_moves(),
                         "King should be in checkmate from knights")
-        self.assertTrue(checkmate_four.in_check() and not checkmate_four.possible_moves(),
+        self.assertTrue(checkmate_four.in_check() and not checkmate_four.valid_moves(),
                         "King should be in checkmate from rook")
 
-        self.assertFalse(no_checkmate_one_board.in_check() and not no_checkmate_one.possible_moves(),
+        self.assertFalse(no_checkmate_one.in_check() and not no_checkmate_one.valid_moves(),
                          "King should not be in checkmate because Kg1 is a legal move")
-        self.assertFalse(no_checkmate_two_board.in_check() and not no_checkmate_two.possible_moves(),
+        self.assertFalse(no_checkmate_two.in_check() and not no_checkmate_two.valid_moves(),
                          "King should not be in checkmate because Kxg2 is a legal move")
 
     def test_stalemate(self):
@@ -699,13 +715,109 @@ class MyTestCase(unittest.TestCase):
 
         no_stalemate.white_king_location = (7, 7)
 
-        self.assertTrue(not stalemate_one.in_check() and not stalemate_one.possible_moves(),
+        self.assertTrue(not stalemate_one.in_check() and not stalemate_one.valid_moves(),
                         "Should be stalemate as there are no legal moves")
-        self.assertTrue(not stalemate_two.in_check() and not stalemate_two.possible_moves(),
+        self.assertTrue(not stalemate_two.in_check() and not stalemate_two.valid_moves(),
                         "Should be stalemate as there are no legal moves")
 
-        self.assertFalse(not no_stalemate.in_check() and not no_stalemate.possible_moves(),
+        self.assertFalse(not no_stalemate.in_check() and not no_stalemate.valid_moves(),
                          "Should not be stalemate as Kg1 is a legal move")
+
+    def test_undo(self):
+        first_board = [
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "bN", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "wK", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"]
+        ]
+
+        first_gs = GameState(first_board)
+        first_gs.make_test_move(Move((6, 3), (7, 3), first_board))
+        first_gs.undo()
+
+        second_board = [
+            ["--", "--", "bQ", "--", "--", "--", "--", "--"],
+            ["--", "wp", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"]
+        ]
+
+        second_gs = GameState(second_board)
+        second_gs.make_test_move(Move((1, 1), (0, 2), second_board))
+        second_gs.undo()
+
+        self.assertEqual(first_gs.board, first_board,
+                         "Undo does not return the board to the correct game state")
+        self.assertEqual(second_gs.board, second_board,
+                         "Undo does not return the board to the correct game state")
+
+    def test_pawn_promotion(self):
+        before_board_one = [
+            ["--", "--", "bQ", "--", "--", "--", "--", "--"],
+            ["--", "wp", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"]
+        ]
+        board_one = [
+            ["--", "--", "wp", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"]
+        ]
+
+        gs_one = GameState(board_one)
+        gs_one.promote_pawn(0, 2, "w", "Q")
+
+        self.assertEqual(gs_one.board[0][2], "wQ",
+                         "Promotion didn't change the pawn to a white queen")
+
+    def test_en_passent(self):
+        board_one = [
+            ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
+            ["bp", "bp", "bp", "--", "bp", "--", "bp", "bp"],
+            ["--", "--", "--", "--", "--", "bp", "--", "--"],
+            ["--", "--", "--", "bp", "wp", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["wp", "wp", "wp", "wp", "--", "wp", "wp", "wp"],
+            ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
+        ]
+
+        board_one_correct = [
+            ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
+            ["bp", "bp", "bp", "--", "bp", "--", "bp", "bp"],
+            ["--", "--", "--", "wp", "--", "bp", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["wp", "wp", "wp", "wp", "--", "wp", "wp", "wp"],
+            ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
+        ]
+
+        gs_one = GameState(board_one)
+        move = Move((3, 4), (2, 3), board_one)
+        move.set_captured_en_passent("w")
+        gs_one.make_move(move)
+
+        self.assertEqual(board_one_correct, gs_one.board,
+                         "After capturing en passent the white pawn should be "
+                         "in the correct position d6 and the black pawn should be captured")
 
 
 if __name__ == '__main__':
