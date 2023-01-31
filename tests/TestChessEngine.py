@@ -867,16 +867,22 @@ class MyTestCase(unittest.TestCase):
         gs.make_move(move_one_b)
         gs.make_move(move_two_w)
 
+        rights = gs.castling_rights
+
         self.assertTrue(not rights.wks and not rights.wqs and rights.bks and rights.bqs,
                         "White should lose castling privileges after moving his king")
 
         gs.make_move(move_two_b)
+
+        rights = gs.castling_rights
 
         self.assertTrue(not rights.wks and not rights.wqs and not rights.bks and not rights.bqs,
                         "If both players have moved their kings and neither "
                         "should therefore have castling rights")
         gs.undo()
         gs.undo()
+
+        rights = gs.castling_rights
 
         self.assertTrue(rights.wks and rights.wqs and rights.bks and rights.bqs,
                         "Undoing should give back castling rights")

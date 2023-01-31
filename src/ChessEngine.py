@@ -469,7 +469,30 @@ class GameState:
 
         :param move: The move that can remove castling rights
         """
-        pass
+        if move.piece_moved == "wK":
+            rights = self.castling_rights
+            self.castling_rights = self.CastlingRights(False, False, rights.bks, rights.bqs)
+            self.castling_log.append(self.CastlingRights(rights.wks, rights.wqs, rights.bks, rights.bqs))
+        if move.piece_moved == "bK":
+            rights = self.castling_rights
+            self.castling_rights = self.CastlingRights(rights.wks, rights.wqs, False, False)
+            self.castling_log.append(self.CastlingRights(rights.wks, rights.wqs, rights.bks, rights.bqs))
+        if move.piece_moved == "wR" and move.start_col == 7:
+            rights = self.castling_rights
+            self.castling_rights = self.CastlingRights(False, rights.wqs, rights.bks, rights.bqs)
+            self.castling_log.append(self.CastlingRights(rights.wks, rights.wqs, rights.bks, rights.bqs))
+        if move.piece_moved == "wR" and move.start_col == 0:
+            rights = self.castling_rights
+            self.castling_rights = self.CastlingRights(rights.wks, False, rights.bks, rights.bqs)
+            self.castling_log.append(self.CastlingRights(rights.wks, rights.wqs, rights.bks, rights.bqs))
+        if move.piece_moved == "bR" and move.start_col == 7:
+            rights = self.castling_rights
+            self.castling_rights = self.CastlingRights(rights.wks, rights.wqs, False, rights.bqs)
+            self.castling_log.append(self.CastlingRights(rights.wks, rights.wqs, rights.bks, rights.bqs))
+        if move.piece_moved == "bR" and move.start_col == 0:
+            rights = self.castling_rights
+            self.castling_rights = self.CastlingRights(rights.wks, rights.wqs, rights.bks, False)
+            self.castling_log.append(self.CastlingRights(rights.wks, rights.wqs, rights.bks, rights.bqs))
 
     def can_white_short_castle(self) -> bool:
         return False
