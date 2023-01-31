@@ -87,8 +87,7 @@ class Move:
         change = -1 if color == "w" else +1
         self.en_passent = (True, (self.start_row + change, self.start_col))
 
-    def set_captured_en_passent(self, color):
-        change = -1 if color == "w" else +1
+    def set_captured_en_passent(self, change: int):
         self.captured_en_passent = (True, (self.start_row, self.start_col + change))
 
     def get_chess_notation(self) -> str:
@@ -127,6 +126,13 @@ class GameState:
     :type self.move_log: List[str]
     """
 
+    class CastlingRights:
+        def __init__(self, wks: bool = True, wqs: bool = True, bks: bool = True, bqs: bool = True):
+            self.wks = wks
+            self.wqs = wqs
+            self.bks = bks
+            self.bqs = bqs
+
     def __init__(self, board=STARTING_BOARD):
         self.board = board
         self.move_functions = {"p": self.generate_pawn_moves, "R": self.generate_rook_moves,
@@ -136,6 +142,8 @@ class GameState:
         self.move_log: List[Move] = []
         self.white_king_location = (7, 4)
         self.black_king_location = (0, 4)
+        self.castling_rights = self.CastlingRights(True, True, True, True)
+        self.castling_log = [self.CastlingRights(self.castling_rights.wks, self.castling_rights.wqs, self.castling_rights.bks, self.castling_rights.bqs)]
         self.checkmate = False
 
     def make_move(self, move: Move):
@@ -149,10 +157,7 @@ class GameState:
         self.board[move.start_row][move.start_col] = "--"
         self.board[move.end_row][move.end_col] = move.piece_moved
         self.move_log.append(move)
-        if move.piece_moved == "wK":
-            self.white_king_location = (move.end_row, move.end_col)
-        elif move.piece_moved == "bK":
-            self.black_king_location = (move.end_row, move.end_col)
+        self.handle_castling_rights(move)
         if move.pawn_promotion:
             promoting_piece: str = ""
             while promoting_piece not in VALID_PIECES:
@@ -195,6 +200,9 @@ class GameState:
             self.white_king_location = (move.start_row, move.start_col)
         elif move.piece_moved == "bK":
             self.black_king_location = (move.start_row, move.start_col)
+        if move.captured_en_passent[0]:
+            self.board[move.captured_en_passent[1][0]][move.captured_en_passent[1][1]] = \
+                "bp" if move.piece_moved == "wp" else "wp"
 
     def valid_moves(self) -> List[Move]:
         """
@@ -328,11 +336,11 @@ class GameState:
         if en_passent[0]:
             if en_passent[1] == (r + change, c + 1):
                 move = Move((r, c), (r + change, c + 1), self.board)
-                move.set_captured_en_passent("w" if self.white_to_move else "b")
+                move.set_captured_en_passent(1)
                 moves.append(move)
             elif en_passent[1] == (r + change, c - 1):
                 move = Move((r, c), (r + change, c - 1), self.board)
-                move.set_captured_en_passent("w" if self.white_to_move else "b")
+                move.set_captured_en_passent(-1)
                 moves.append(move)
 
     def generate_knight_moves(self, r: int, c: int, moves: List[Move]):
@@ -454,3 +462,23 @@ class GameState:
 
     def promote_pawn(self, r: int, c: int, color: str, new_piece: str):
         self.board[r][c] = color + new_piece
+
+    def handle_castling_rights(self, move: Move):
+        """
+        Takes in a move and potentially updates the castling rights
+
+        :param move: The move that can remove castling rights
+        """
+        pass
+
+    def can_white_short_castle(self) -> bool:
+        return False
+
+    def can_white_long_castle(self) -> bool:
+        return False
+
+    def can_black_short_castle(self) -> bool:
+        return False
+
+    def can_black_long_castle(self) -> bool:
+        return False

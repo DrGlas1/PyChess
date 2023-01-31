@@ -760,16 +760,6 @@ class MyTestCase(unittest.TestCase):
                          "Undo does not return the board to the correct game state")
 
     def test_pawn_promotion(self):
-        before_board_one = [
-            ["--", "--", "bQ", "--", "--", "--", "--", "--"],
-            ["--", "wp", "--", "--", "--", "--", "--", "--"],
-            ["--", "--", "--", "--", "--", "--", "--", "--"],
-            ["--", "--", "--", "--", "--", "--", "--", "--"],
-            ["--", "--", "--", "--", "--", "--", "--", "--"],
-            ["--", "--", "--", "--", "--", "--", "--", "--"],
-            ["--", "--", "--", "--", "--", "--", "--", "--"],
-            ["--", "--", "--", "--", "--", "--", "--", "--"]
-        ]
         board_one = [
             ["--", "--", "wp", "--", "--", "--", "--", "--"],
             ["--", "--", "--", "--", "--", "--", "--", "--"],
@@ -790,34 +780,161 @@ class MyTestCase(unittest.TestCase):
     def test_en_passent(self):
         board_one = [
             ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
-            ["bp", "bp", "bp", "--", "bp", "--", "bp", "bp"],
-            ["--", "--", "--", "--", "--", "bp", "--", "--"],
-            ["--", "--", "--", "bp", "wp", "--", "--", "--"],
+            ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
             ["--", "--", "--", "--", "--", "--", "--", "--"],
             ["--", "--", "--", "--", "--", "--", "--", "--"],
-            ["wp", "wp", "wp", "wp", "--", "wp", "wp", "wp"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
             ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
         ]
 
-        board_one_correct = [
+        board_one_first_check = [
             ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
             ["bp", "bp", "bp", "--", "bp", "--", "bp", "bp"],
-            ["--", "--", "--", "wp", "--", "bp", "--", "--"],
             ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "bp", "wp", "bp", "--", "--"],
             ["--", "--", "--", "--", "--", "--", "--", "--"],
             ["--", "--", "--", "--", "--", "--", "--", "--"],
             ["wp", "wp", "wp", "wp", "--", "wp", "wp", "wp"],
             ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
         ]
 
-        gs_one = GameState(board_one)
-        move = Move((3, 4), (2, 3), board_one)
-        move.set_captured_en_passent("w")
-        gs_one.make_move(move)
+        board_one_second_check = [
+            ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
+            ["bp", "bp", "bp", "--", "bp", "--", "bp", "bp"],
+            ["--", "--", "--", "wp", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "bp", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["wp", "wp", "wp", "wp", "--", "wp", "wp", "wp"],
+            ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
+        ]
 
-        self.assertEqual(board_one_correct, gs_one.board,
-                         "After capturing en passent the white pawn should be "
-                         "in the correct position d6 and the black pawn should be captured")
+        gs = GameState(board_one)
+        move_one_w = Move((6, 4), (4, 4), gs.board)
+        gs.make_move(move_one_w)
+        move_one_b = Move((1, 5), (3, 5), gs.board)
+        move_one_b.set_en_passent("b")
+        gs.make_move(move_one_b)
+        move_two_w = Move((4, 4), (3, 4), gs.board)
+        gs.make_move(move_two_w)
+        move_two_b = Move((1, 3), (3, 3), gs.board)
+        move_two_b.set_en_passent("b")
+        gs.make_move(move_two_b)
+
+        self.assertEqual(gs.board, board_one_first_check, "Moves are not correctly changing the board")
+
+        valid_moves = gs.valid_moves()
+        move_three_w = Move((3, 4), (2, 3), gs.board)
+        move_three_w.set_captured_en_passent(-1)
+        fake_move_three_w = Move((3, 4), (2, 5), gs.board)
+
+        self.assertTrue(move_three_w in valid_moves, "En passent should be possible because black d-pawn made a "
+                                                     "double move last move")
+        self.assertFalse(fake_move_three_w in valid_moves, "En passent should not be possible because black f-pawn"
+                                                           "didn't make a double move last move")
+
+        gs.make_move(move_three_w)
+        self.assertEqual(gs.board, board_one_second_check, "After a captured en passent, the board is not correct")
+
+        gs.undo()
+        self.assertEqual(gs.board, board_one_first_check, "Undo of en passent does not return right board")
+
+    def test_handle_castling_rights(self):
+        board_one = [
+            ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
+            ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
+            ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
+        ]
+
+        gs = GameState(board_one)
+
+        rights = gs.castling_rights
+        self.assertTrue(rights.wks and rights.wqs and rights.bks and rights.bqs,
+                        "At start of game, both sides should have their castling rights")
+
+        move_one_w = Move((6, 4), (4, 4), gs.board)
+        move_one_b = Move((1, 4), (3, 4), gs.board)
+        move_two_w = Move((7, 4), (6, 4), gs.board)
+        move_two_b = Move((0, 4), (1, 4), gs.board)
+        gs.make_move(move_one_w)
+        gs.make_move(move_one_b)
+        gs.make_move(move_two_w)
+
+        self.assertTrue(not rights.wks and not rights.wqs and rights.bks and rights.bqs,
+                        "White should lose castling privileges after moving his king")
+
+        gs.make_move(move_two_b)
+
+        self.assertTrue(not rights.wks and not rights.wqs and not rights.bks and not rights.bqs,
+                        "If both players have moved their kings and neither "
+                        "should therefore have castling rights")
+        gs.undo()
+        gs.undo()
+
+        self.assertTrue(rights.wks and rights.wqs and rights.bks and rights.bqs,
+                        "Undoing should give back castling rights")
+
+    def test_can_x_castle(self):
+        board_one = [
+            ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
+            ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
+            ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
+        ]
+
+        board_one_first_check = [
+            ["bR", "--", "bB", "bQ", "bK", "bB", "--", "bR"],
+            ["bp", "bp", "bp", "bp", "--", "bp", "bp", "bp"],
+            ["--", "--", "bN", "--", "--", "bN", "--", "--"],
+            ["--", "wB", "--", "--", "bp", "--", "--", "--"],
+            ["--", "--", "--", "--", "wp", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "wN", "--", "--"],
+            ["wp", "wp", "wp", "wp", "--", "wp", "wp", "wp"],
+            ["wR", "wN", "wB", "wQ", "wK", "--", "--", "wR"]
+        ]
+
+        gs = GameState(board_one)
+
+        self.assertFalse(gs.can_white_short_castle(),
+                         "No castling should be allowed on first move")
+        self.assertFalse(gs.can_white_short_castle(),
+                         "No castling should be allowed on first move")
+        self.assertFalse(gs.can_black_short_castle(),
+                         "No castling should be allowed on first move")
+        self.assertFalse(gs.can_black_long_castle(),
+                         "No castling should be allowed on first move")
+
+        move_one_w = Move((6, 4), (4, 4), gs.board)
+        move_one_b = Move((1, 4), (3, 4), gs.board)
+        move_two_w = Move((7, 6), (5, 5), gs.board)
+        move_two_b = Move((0, 1), (2, 2), gs.board)
+        move_three_w = Move((7, 5), (3, 1), gs.board)
+        move_three_b = Move((0, 6), (2, 5), gs.board)
+        gs.make_move(move_one_w)
+        gs.make_move(move_one_b)
+        gs.make_move(move_two_w)
+        gs.make_move(move_two_b)
+        gs.make_move(move_three_w)
+        gs.make_move(move_three_b)
+
+        self.assertEqual(gs.board, board_one_first_check,
+                         "Incorrect board, should not have passed previous tests")
+        self.assertTrue(gs.can_white_short_castle(), "No pieces between king and kingsrook, "
+                                                     "white should be able to castle")
+        self.assertFalse(gs.can_white_long_castle() or
+                         gs.can_black_short_castle() or gs.can_black_long_castle(),
+                         "Castling allowed should be white's kingside castling")
 
 
 if __name__ == '__main__':
