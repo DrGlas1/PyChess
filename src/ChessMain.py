@@ -62,14 +62,13 @@ def main():
                     player_clicks.append(sq_selected)
                 if len(player_clicks) == 2:
                     move = Move(player_clicks[0], player_clicks[1], gs.board)
-                    print(player_clicks[0], player_clicks[1])
                     for i in range(len(valid_moves)):
                         if move == valid_moves[i]:
                             gs.make_move(valid_moves[i])
                             move_made = True
                             sq_selected = ()
                             player_clicks = []
-                            print(gs.board)
+                            break
                     if not move_made:
                         player_clicks = [sq_selected]
         if move_made:

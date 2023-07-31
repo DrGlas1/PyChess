@@ -68,6 +68,7 @@ class Move:
         self.en_passent: tuple[bool, tuple[int, int]] = (False, (0, 0))
         self.captured_en_passent: tuple[bool, tuple[int, int]] = (False, (0, 0))
         self.pawn_promotion: bool = self.piece_moved[1] == "p" and (self.end_row == 0 or self.end_row == 7)
+        self.castled: bool = self.piece_moved[1] == "K" and (abs(self.start_col - self.end_col) >= 2)
         self.hash_code: int = self.start_row * 1000 + self.start_col * 100 + self.end_row * 10 + self.end_col
 
     def __eq__(self, other: Any) -> bool:
@@ -127,6 +128,18 @@ class GameState:
     """
 
     class CastlingRights:
+        """
+        Keeps tracks of the current castling rights of the GameState
+
+        :param self.wks: Represents if white is able to king-side castle
+        :type self.wks: bool
+        :param self.wqs: Represents if white is able to queen-side castle
+        :type self.wqs: bool
+        :param self.bks: Represents if black is able to king-side castle
+        :type self.bks: bool
+        :param self.bqs: Represents if black is able to queen-side castle
+        :type self.bqs: bool
+        """
         def __init__(self, wks: bool = True, wqs: bool = True, bks: bool = True, bqs: bool = True):
             self.wks = wks
             self.wqs = wqs
@@ -143,7 +156,10 @@ class GameState:
         self.white_king_location = (7, 4)
         self.black_king_location = (0, 4)
         self.castling_rights = self.CastlingRights(True, True, True, True)
-        self.castling_log = [self.CastlingRights(self.castling_rights.wks, self.castling_rights.wqs, self.castling_rights.bks, self.castling_rights.bqs)]
+        self.castling_log = [self.CastlingRights(self.castling_rights.wks,
+                                                 self.castling_rights.wqs,
+                                                 self.castling_rights.bks,
+                                                 self.castling_rights.bqs)]
         self.checkmate = False
 
     def make_move(self, move: Move):
@@ -166,6 +182,16 @@ class GameState:
         captured_en_passent = self.move_log[-1].captured_en_passent
         if captured_en_passent[0]:
             self.board[captured_en_passent[1][0]][captured_en_passent[1][1]] = "--"
+        castled = move.castled
+        if castled:
+            prefix = "w" if self.white_to_move else "b"
+            if move.end_col == 6:
+                self.board[move.end_row][5] = f"{prefix}R"
+                self.board[move.end_row][7] = "--"
+            else:
+                self.board[move.end_row][3] = f"{prefix}R"
+                self.board[move.end_row][0] = "--"
+
         self.white_to_move = not self.white_to_move
 
     def make_test_move(self, move: Move):
@@ -197,26 +223,54 @@ class GameState:
         self.board[move.end_row][move.end_col] = move.piece_captured
         self.white_to_move = not self.white_to_move
         if move.piece_moved == "wK":
+            if move.castled:
+                if move.end_col == 6:
+                    self.board[move.end_row][5] = "--"
+                    self.board[move.end_row][7] = "wR"
+                else:
+                    self.board[move.end_row][3] = "--"
+                    self.board[move.end_row][0] = "wR"
             self.white_king_location = (move.start_row, move.start_col)
+            self.castling_rights = self.castling_log.pop() if not len(self.castling_log) == 0 else self.castling_rights
         elif move.piece_moved == "bK":
+            if move.castled:
+                if move.end_col == 6:
+                    self.board[move.end_row][5] = "--"
+                    self.board[move.end_row][7] = "bR"
+                else:
+                    self.board[move.end_row][3] = "--"
+                    self.board[move.end_row][0] = "bR"
             self.black_king_location = (move.start_row, move.start_col)
+            self.castling_rights = self.castling_log.pop() if not len(self.castling_log) == 0 else self.castling_rights
         if move.captured_en_passent[0]:
             self.board[move.captured_en_passent[1][0]][move.captured_en_passent[1][1]] = \
                 "bp" if move.piece_moved == "wp" else "wp"
 
-    def valid_moves(self) -> List[Move]:
+    def _valid_moves(self) -> List[Move]:
         """
         Filters possible moves by removing checks and then returns the moves.
 
-        :return: Returns list of all valid moves for player
-        :rtype: List[str]
+        :return: Returns list of all valid moves for player excluding castling
+        :rtype: List[Move]
         """
         moves = self.possible_moves()
+        # OBS - Check this? Why filter for all moves all the time
         for i in range(len(moves) - 1, -1, -1):
             self.filter_invalid_moves(i, moves)
         if not moves:
             is_checkmate = self.in_check()
             self.checkmate = is_checkmate
+        return moves
+
+    def valid_moves(self) -> List[Move]:
+        """
+        Filters possible moves by removing checks and then returns the moves.
+
+        :return: Returns list of all valid moves for player including castling
+        :rtype: List[Move]
+        """
+        moves = self._valid_moves()
+        moves = self.generate_castling_moves(moves)
         return moves
 
     def filter_invalid_moves(self, i, possible_moves: List[Move]):
@@ -237,46 +291,6 @@ class GameState:
             possible_moves.pop(i)
         self.white_to_move = not self.white_to_move
         self.undo()
-
-    def in_check(self) -> bool:
-        """
-        Returns true if king is in check, otherwise returns false.
-
-        :return: If the king is in check
-        :rtype: bool
-        """
-        position = self.white_king_location if self.white_to_move else self.black_king_location
-        prefix = "b" if self.white_to_move else "w"
-        moves: List[Move] = []
-        self.generate_attacking_pawn_moves(position[0], position[1], moves)
-        for pawn_move in moves:
-            if self.board[pawn_move.end_row][pawn_move.end_col] == f"{prefix}p":
-                return True
-        moves: List[Move] = []
-        self.generate_bishop_moves(position[0], position[1], moves)
-        for bishop_move in moves:
-            if self.board[bishop_move.end_row][bishop_move.end_col] == f"{prefix}B":
-                return True
-        moves: List[Move] = []
-        self.generate_knight_moves(position[0], position[1], moves)
-        for knight_move in moves:
-            if self.board[knight_move.end_row][knight_move.end_col] == f"{prefix}N":
-                return True
-        moves: List[Move] = []
-        self.generate_rook_moves(position[0], position[1], moves)
-        for rook_move in moves:
-            if self.board[rook_move.end_row][rook_move.end_col] == f"{prefix}R":
-                return True
-        moves: List[Move] = []
-        self.generate_queen_moves(position[0], position[1], moves)
-        for queen_move in moves:
-            if self.board[queen_move.end_row][queen_move.end_col] == f"{prefix}Q":
-                return True
-        moves: List[Move] = []
-        self.generate_king_moves(position[0], position[1], moves)
-        for king_move in moves:
-            if self.board[king_move.end_row][king_move.end_col] == f"{prefix}K":
-                return True
 
     def possible_moves(self) -> List[Move]:
         """
@@ -327,19 +341,21 @@ class GameState:
         :type moves: List[Move]
         """
         prefix = "b" if self.white_to_move else "w"
-        change = -1 if self.white_to_move else +1
-        if c - 1 >= 0 and self.board[r + change][c - 1][0] == prefix:
-            moves.append(Move((r, c), (r + change, c - 1), self.board))
-        if c + 1 <= 7 and self.board[r + change][c + 1][0] == prefix:
-            moves.append(Move((r, c), (r + change, c + 1), self.board))
+        change = r - 1 if self.white_to_move else r + 1
+        if change > 7 or change < 0:
+            return
+        if c - 1 >= 0 and self.board[change][c - 1][0] == prefix:
+            moves.append(Move((r, c), (change, c - 1), self.board))
+        if c + 1 <= 7 and self.board[change][c + 1][0] == prefix:
+            moves.append(Move((r, c), (change, c + 1), self.board))
         en_passent = self.move_log[-1].en_passent if self.move_log else (False, (0, 0), (0, 0))
         if en_passent[0]:
-            if en_passent[1] == (r + change, c + 1):
-                move = Move((r, c), (r + change, c + 1), self.board)
+            if en_passent[1] == (change, c + 1):
+                move = Move((r, c), (change, c + 1), self.board)
                 move.set_captured_en_passent(1)
                 moves.append(move)
-            elif en_passent[1] == (r + change, c - 1):
-                move = Move((r, c), (r + change, c - 1), self.board)
+            elif en_passent[1] == (change, c - 1):
+                move = Move((r, c), (change, c - 1), self.board)
                 move.set_captured_en_passent(-1)
                 moves.append(move)
 
@@ -383,46 +399,6 @@ class GameState:
                 moves.append(Move((r, c), next_move, self.board))
                 next_move = (next_move[0] + delta[0], next_move[1] + delta[1])
 
-    def generate_king_moves(self, r: int, c: int, moves: List[Move]):
-        """
-        Appends all possible legal moves made by the king at the current position to moves
-
-        :param r: The current column of the king
-        :type r: int
-        :param c: The current row of the king
-        :type c: int
-        :param moves: All current valid moves
-        :type moves: List[Move]
-        """
-        same_color = "w" if self.white_to_move else "b"
-        deltas = [(+1, +1), (+1, -1), (-1, +1), (-1, -1), (+1, 0), (0, +1), (-1, 0), (0, -1)]
-        potential_moves = map(lambda delta: (r + delta[0], c + delta[1]), deltas)
-        results = filter(lambda move: self.valid_piece_position(move, same_color), potential_moves)
-        for next_move in results:
-            moves.append(Move((r, c), next_move, self.board))
-
-    def generate_queen_moves(self, r: int, c: int, moves: List[Move]):
-        """
-        Appends all possible legal moves made by the queen at the current position to moves
-
-        :param r: The current column of the queen
-        :type r: int
-        :param c: The current row of the queen
-        :type c: int
-        :param moves: All current valid moves
-        :type moves: List[Move]
-        """
-        same_color = "w" if self.white_to_move else "b"
-        other_color = "b" if self.white_to_move else "w"
-        deltas = [(+1, +1), (+1, -1), (-1, +1), (-1, -1), (+1, 0), (0, +1), (-1, 0), (0, -1)]
-        for delta in deltas:
-            next_move = (r + delta[0], c + delta[1])
-            captures = False
-            while self.valid_piece_position(next_move, same_color) and not captures:
-                captures = self.board[next_move[0]][next_move[1]][0] == other_color
-                moves.append(Move((r, c), next_move, self.board))
-                next_move = (next_move[0] + delta[0], next_move[1] + delta[1])
-
     def generate_rook_moves(self, r: int, c: int, moves: List[Move]):
         """
         Appends all possible legal moves made by the rook at the current position to moves
@@ -446,6 +422,86 @@ class GameState:
                 moves.append(Move((r, c), next_move, self.board))
                 next_move = (next_move[0] + delta[0], next_move[1] + delta[1])
 
+    def generate_queen_moves(self, r: int, c: int, moves: List[Move]):
+        """
+        Appends all possible legal moves made by the queen at the current position to moves
+
+        :param r: The current column of the queen
+        :type r: int
+        :param c: The current row of the queen
+        :type c: int
+        :param moves: All current valid moves
+        :type moves: List[Move]
+        """
+        same_color = "w" if self.white_to_move else "b"
+        other_color = "b" if self.white_to_move else "w"
+        deltas = [(+1, +1), (+1, -1), (-1, +1), (-1, -1), (+1, 0), (0, +1), (-1, 0), (0, -1)]
+        for delta in deltas:
+            next_move = (r + delta[0], c + delta[1])
+            captures = False
+            while self.valid_piece_position(next_move, same_color) and not captures:
+                captures = self.board[next_move[0]][next_move[1]][0] == other_color
+                moves.append(Move((r, c), next_move, self.board))
+                next_move = (next_move[0] + delta[0], next_move[1] + delta[1])
+
+    def generate_king_moves(self, r: int, c: int, moves: List[Move]):
+        """
+        Appends all possible legal moves made by the king at the current position to moves
+
+        :param r: The current column of the king
+        :type r: int
+        :param c: The current row of the king
+        :type c: int
+        :param moves: All current valid moves
+        :type moves: List[Move]
+        """
+        same_color = "w" if self.white_to_move else "b"
+        deltas = [(+1, +1), (+1, -1), (-1, +1), (-1, -1), (+1, 0), (0, +1), (-1, 0), (0, -1)]
+        potential_moves = map(lambda delta: (r + delta[0], c + delta[1]), deltas)
+        results = filter(lambda move: self.valid_piece_position(move, same_color), potential_moves)
+        for next_move in results:
+            moves.append(Move((r, c), next_move, self.board))
+
+    def generate_castling_moves(self, moves: List[Move]):
+        """
+        Generates the castling moves
+
+        :param moves: current valid moves
+        :type: List[Move]
+        :return: all valid moves including castling
+        :rtype: List[Move]
+        """
+        enemy_moves = self._valid_moves()
+        if self.white_to_move:
+            ks, qs = self.castling_rights.wks, self.castling_rights.wqs
+            if not (ks or qs):
+                return moves
+            for move in enemy_moves:
+                if move.end_row == 7:
+                    if move.end_col == 5 or move.end_col == 6 or move.end_col == 4:
+                        ks = False
+                    if move.end_col == 2 or move.end_col == 3 or move.end_col == 4:
+                        qs = False
+                if ks:
+                    moves.append(Move((7, 4), (7, 6), self.board))
+                if qs:
+                    moves.append(Move((7, 4), (7, 2), self.board))
+        else:
+            ks, qs = self.castling_rights.bks, self.castling_rights.bqs
+            if not (ks or qs):
+                return moves
+            for move in enemy_moves:
+                if move.end_row == 0:
+                    if move.end_col == 5 or move.end_col == 6 or move.end_col == 4:
+                        ks = False
+                    if move.end_col == 2 or move.end_col == 3 or move.end_col == 4:
+                        qs = False
+                if ks:
+                    moves.append(Move((0, 4), (0, 6), self.board))
+                if qs:
+                    moves.append(Move((0, 4), (0, 2), self.board))
+        return moves
+
     def valid_piece_position(self, move: Tuple[int, int], same_color: str) -> bool:
         """
         Takes in a tuple representing the ending squares and a string of the color of the moving piece.
@@ -459,6 +515,58 @@ class GameState:
         :rtype: bool
         """
         return 0 <= move[0] <= 7 and 0 <= move[1] <= 7 and self.board[move[0]][move[1]][0] != same_color
+
+    def square_is_attacked(self, square: Tuple[int, int]) -> bool:
+        """
+        Returns True if the square is attacked by one of the other colors pieces,
+        otherwise False.
+
+        :param square: The square we check if it is attacked
+        :type Tuple[int, int]
+        :return: True if the square is attacked, otherwise false
+        :rtype: bool
+        """
+        prefix = "b" if self.white_to_move else "w"
+        moves: List[Move] = []
+        self.generate_attacking_pawn_moves(square[0], square[1], moves)
+        for pawn_move in moves:
+            if self.board[pawn_move.end_row][pawn_move.end_col] == f"{prefix}p":
+                return True
+        moves: List[Move] = []
+        self.generate_bishop_moves(square[0], square[1], moves)
+        for bishop_move in moves:
+            if self.board[bishop_move.end_row][bishop_move.end_col] == f"{prefix}B":
+                return True
+        moves: List[Move] = []
+        self.generate_knight_moves(square[0], square[1], moves)
+        for knight_move in moves:
+            if self.board[knight_move.end_row][knight_move.end_col] == f"{prefix}N":
+                return True
+        moves: List[Move] = []
+        self.generate_rook_moves(square[0], square[1], moves)
+        for rook_move in moves:
+            if self.board[rook_move.end_row][rook_move.end_col] == f"{prefix}R":
+                return True
+        moves: List[Move] = []
+        self.generate_queen_moves(square[0], square[1], moves)
+        for queen_move in moves:
+            if self.board[queen_move.end_row][queen_move.end_col] == f"{prefix}Q":
+                return True
+        moves: List[Move] = []
+        self.generate_king_moves(square[0], square[1], moves)
+        for king_move in moves:
+            if self.board[king_move.end_row][king_move.end_col] == f"{prefix}K":
+                return True
+
+    def in_check(self) -> bool:
+        """
+        Returns true if king is in check, otherwise returns false.
+
+        :return: If the king is in check
+        :rtype: bool
+        """
+        position = self.white_king_location if self.white_to_move else self.black_king_location
+        return self.square_is_attacked(position)
 
     def promote_pawn(self, r: int, c: int, color: str, new_piece: str):
         self.board[r][c] = color + new_piece
@@ -493,15 +601,3 @@ class GameState:
             rights = self.castling_rights
             self.castling_rights = self.CastlingRights(rights.wks, rights.wqs, rights.bks, False)
             self.castling_log.append(self.CastlingRights(rights.wks, rights.wqs, rights.bks, rights.bqs))
-
-    def can_white_short_castle(self) -> bool:
-        return False
-
-    def can_white_long_castle(self) -> bool:
-        return False
-
-    def can_black_short_castle(self) -> bool:
-        return False
-
-    def can_black_long_castle(self) -> bool:
-        return False
