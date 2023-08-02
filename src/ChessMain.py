@@ -6,6 +6,7 @@ import pygame as p
 from typing import List
 from ChessEngine import GameState
 from ChessEngine import Move
+from src.ChessAI import random_move_ai, greedy_ai, min_max_ai
 
 p.init()
 
@@ -42,45 +43,53 @@ def main():
     player_clicks = []                                 # Array of the last two selected squares
     valid_moves = gs.valid_moves()
     move_made = False
+    player_one = True
+    player_two = False
     while running:
-        for e in p.event.get():
-            if e.type == p.QUIT:
-                running = False
-            elif e.type == p.KEYDOWN:
-                if e.key == p.K_z:
-                    gs.undo()
-                    move_made = True
-            elif e.type == p.MOUSEBUTTONDOWN:
-                location = p.mouse.get_pos()
-                c = location[0] // SQUARE_SIZE
-                r = location[1] // SQUARE_SIZE
-                if sq_selected == (r, c):              # Clicking on the same piece deselects the clicks
-                    sq_selected = ()
-                    player_clicks = []
-                else:
-                    sq_selected = (r, c)
-                    player_clicks.append(sq_selected)
-                if len(player_clicks) == 2:
-                    move = Move(player_clicks[0], player_clicks[1], gs.board)
-                    for i in range(len(valid_moves)):
-                        if move == valid_moves[i]:
-                            gs.make_move(valid_moves[i])
-                            move_made = True
-                            sq_selected = ()
-                            player_clicks = []
-                            break
-                    if not move_made:
-                        player_clicks = [sq_selected]
-        if move_made:
-            valid_moves = gs.valid_moves()
-            if not valid_moves:
-                running = False
-                is_checkmate = gs.checkmate
-                print("Checkmate!") if is_checkmate else print("Stalemate :/")
-            move_made = False
-        clock.tick(MAX_FPS)
-        p.display.flip()
-        draw_game_state(screen, gs)
+        is_human_turn = (gs.white_to_move and player_one) or (not gs.white_to_move and player_two)
+        if not is_human_turn:
+            ai_move = min_max_ai(valid_moves, gs)
+            gs.make_move(ai_move)
+            move_made = True
+        else:
+            for e in p.event.get():
+                if e.type == p.QUIT:
+                    running = False
+                elif e.type == p.KEYDOWN:
+                    if e.key == p.K_z:
+                        gs.undo()
+                        move_made = True
+                elif e.type == p.MOUSEBUTTONDOWN:
+                    location = p.mouse.get_pos()
+                    c = location[0] // SQUARE_SIZE
+                    r = location[1] // SQUARE_SIZE
+                    if sq_selected == (r, c):  # Clicking on the same piece deselects the clicks
+                        sq_selected = ()
+                        player_clicks = []
+                    else:
+                        sq_selected = (r, c)
+                        player_clicks.append(sq_selected)
+                    if len(player_clicks) == 2:
+                        move = Move(player_clicks[0], player_clicks[1], gs.board)
+                        for i in range(len(valid_moves)):
+                            if move == valid_moves[i]:
+                                gs.make_move(valid_moves[i])
+                                move_made = True
+                                sq_selected = ()
+                                player_clicks = []
+                                break
+                        if not move_made:
+                            player_clicks = [sq_selected]
+            if move_made:
+                valid_moves = gs.valid_moves()
+                if not valid_moves:
+                    running = False
+                    is_checkmate = gs.checkmate
+                    print("Checkmate!") if is_checkmate else print("Stalemate :/")
+                move_made = False
+            clock.tick(MAX_FPS)
+            p.display.flip()
+            draw_game_state(screen, gs)
 
 
 def draw_game_state(screen: p.Surface, gs: GameState):

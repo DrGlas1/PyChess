@@ -140,6 +140,7 @@ class GameState:
         :param self.bqs: Represents if black is able to queen-side castle
         :type self.bqs: bool
         """
+
         def __init__(self, wks: bool = True, wqs: bool = True, bks: bool = True, bqs: bool = True):
             self.wks = wks
             self.wqs = wqs
@@ -175,41 +176,26 @@ class GameState:
         self.move_log.append(move)
         self.handle_castling_rights(move)
         if move.pawn_promotion:
-            promoting_piece: str = ""
-            while promoting_piece not in VALID_PIECES:
-                promoting_piece = input("Promote into Q, R, K, B: ").upper()
+            promoting_piece = "Q"
             self.promote_pawn(move.end_row, move.end_col, move.piece_moved[0], promoting_piece)
         captured_en_passent = self.move_log[-1].captured_en_passent
         if captured_en_passent[0]:
             self.board[captured_en_passent[1][0]][captured_en_passent[1][1]] = "--"
-        castled = move.castled
-        if castled:
-            prefix = "w" if self.white_to_move else "b"
-            if move.end_col == 6:
-                self.board[move.end_row][5] = f"{prefix}R"
-                self.board[move.end_row][7] = "--"
+        if move.piece_moved[1] == "K":
+            prefix = move.piece_moved[0]
+            castled = move.castled
+            if castled:
+                if move.end_col == 6:
+                    self.board[move.end_row][5] = f"{prefix}R"
+                    self.board[move.end_row][7] = "--"
+                else:
+                    self.board[move.end_row][3] = f"{prefix}R"
+                    self.board[move.end_row][0] = "--"
+            if prefix == "w":
+                self.white_king_location = (move.end_row, move.end_col)
             else:
-                self.board[move.end_row][3] = f"{prefix}R"
-                self.board[move.end_row][0] = "--"
+                self.black_king_location = (move.end_row, move.end_col)
 
-        self.white_to_move = not self.white_to_move
-
-    def make_test_move(self, move: Move):
-        """
-        Takes in a move made.
-        Changes the GameState to reflect that move and adds it to the move log.
-        Doesn't include promotion as this is only for testing if moves are valid.
-
-        :param move: Represents the move made
-        :type move: Move
-        """
-        self.board[move.start_row][move.start_col] = "--"
-        self.board[move.end_row][move.end_col] = move.piece_moved
-        self.move_log.append(move)
-        if move.piece_moved == "wK":
-            self.white_king_location = (move.end_row, move.end_col)
-        elif move.piece_moved == "bK":
-            self.black_king_location = (move.end_row, move.end_col)
         self.white_to_move = not self.white_to_move
 
     def undo(self):
@@ -241,6 +227,8 @@ class GameState:
                     self.board[move.end_row][3] = "--"
                     self.board[move.end_row][0] = "bR"
             self.black_king_location = (move.start_row, move.start_col)
+            self.castling_rights = self.castling_log.pop() if not len(self.castling_log) == 0 else self.castling_rights
+        elif move.piece_moved[1] == "R":
             self.castling_rights = self.castling_log.pop() if not len(self.castling_log) == 0 else self.castling_rights
         if move.captured_en_passent[0]:
             self.board[move.captured_en_passent[1][0]][move.captured_en_passent[1][1]] = \
@@ -284,7 +272,7 @@ class GameState:
         :type possible_moves: List[Move]
         """
         move = possible_moves[i]
-        self.make_test_move(move)
+        self.make_move(move)
         self.white_to_move = not self.white_to_move
         remove_move = self.in_check()
         if remove_move:
@@ -471,35 +459,51 @@ class GameState:
         :return: all valid moves including castling
         :rtype: List[Move]
         """
-        enemy_moves = self._valid_moves()
+
         if self.white_to_move:
             ks, qs = self.castling_rights.wks, self.castling_rights.wqs
+            last_row = self.board[7]
+            if not last_row[5] == "--" or not last_row[6] == "--":
+                ks = False
+            if not last_row[3] == "--" or not last_row[2] == "--" or not last_row[1] == "--":
+                qs = False
             if not (ks or qs):
                 return moves
-            for move in enemy_moves:
-                if move.end_row == 7:
-                    if move.end_col == 5 or move.end_col == 6 or move.end_col == 4:
-                        ks = False
-                    if move.end_col == 2 or move.end_col == 3 or move.end_col == 4:
-                        qs = False
-                if ks:
-                    moves.append(Move((7, 4), (7, 6), self.board))
-                if qs:
-                    moves.append(Move((7, 4), (7, 2), self.board))
+            wqB, wQ, wK, wkB, wN = self.square_is_attacked((7, 2)), \
+                self.square_is_attacked((7, 3)), \
+                self.square_is_attacked((7, 4)), \
+                self.square_is_attacked((7, 5)), \
+                self.square_is_attacked((7, 6))
+            if wkB or wN or wK:
+                ks = False
+            if wqB or wQ or wK:
+                qs = False
+            if ks:
+                moves.append(Move((7, 4), (7, 6), self.board))
+            if qs:
+                moves.append(Move((7, 4), (7, 2), self.board))
         else:
             ks, qs = self.castling_rights.bks, self.castling_rights.bqs
+            last_row = self.board[0]
+            if not last_row[5] == "--" or not last_row[6] == "--":
+                ks = False
+            if not last_row[3] == "--" or not last_row[2] == "--" or not last_row[1] == "--":
+                qs = False
             if not (ks or qs):
                 return moves
-            for move in enemy_moves:
-                if move.end_row == 0:
-                    if move.end_col == 5 or move.end_col == 6 or move.end_col == 4:
-                        ks = False
-                    if move.end_col == 2 or move.end_col == 3 or move.end_col == 4:
-                        qs = False
-                if ks:
-                    moves.append(Move((0, 4), (0, 6), self.board))
-                if qs:
-                    moves.append(Move((0, 4), (0, 2), self.board))
+            bqB, bQ, bK, bkB, bN = self.square_is_attacked((0, 2)), \
+                self.square_is_attacked((0, 3)), \
+                self.square_is_attacked((0, 4)), \
+                self.square_is_attacked((0, 5)), \
+                self.square_is_attacked((0, 6))
+            if bkB or bN or bK:
+                ks = False
+            if bqB or bQ or bK:
+                qs = False
+            if ks:
+                moves.append(Move((0, 4), (0, 6), self.board))
+            if qs:
+                moves.append(Move((0, 4), (0, 2), self.board))
         return moves
 
     def valid_piece_position(self, move: Tuple[int, int], same_color: str) -> bool:
@@ -522,7 +526,7 @@ class GameState:
         otherwise False.
 
         :param square: The square we check if it is attacked
-        :type Tuple[int, int]
+        :type: Tuple[int, int]
         :return: True if the square is attacked, otherwise false
         :rtype: bool
         """
@@ -557,6 +561,7 @@ class GameState:
         for king_move in moves:
             if self.board[king_move.end_row][king_move.end_col] == f"{prefix}K":
                 return True
+        return False
 
     def in_check(self) -> bool:
         """
